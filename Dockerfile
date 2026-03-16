@@ -16,7 +16,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Generar Prisma Client (ajusta la ruta si tu carpeta es 'database' en lugar de 'db')
 RUN npx prisma generate --schema packages/db/prisma/schema.prisma
+
 RUN cd apps/dashboard && npm run build
 
 FROM base AS runner

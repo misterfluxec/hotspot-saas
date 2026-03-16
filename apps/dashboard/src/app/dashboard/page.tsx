@@ -1,224 +1,166 @@
-'use client';
+import { PrismaClient } from '@prisma/client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+const prisma = new PrismaClient();
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  tenantId: string;
-}
-
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-
-  useEffect(() => {
-    // Obtener información del usuario desde los headers del middleware
-    const getUserInfo = () => {
-      // En el cliente, necesitamos obtener la info de otra manera
-      // Por ahora, usaremos una llamada a la API
-      fetchUserInfo();
-    };
-
-    getUserInfo();
-  }, []);
-
-  const fetchUserInfo = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        // Si no hay sesión, redirigir al login
-        router.push('/login');
+export default async function SuperAdminDashboard() {
+  // Obtener métricas principales
+  const [
+    totalClientes,
+    clientesActivos,
+    trialsActivos,
+    totalMRR,
+    ultimosClientes,
+    ultimasSuscripciones
+  ] = await Promise.all([
+    prisma.tenant.count(),
+    prisma.tenant.count({ where: { status: 'active' } }),
+    prisma.tenant.count({ 
+      where: { 
+        status: 'trial',
+        trialEndsAt: { gt: new Date() }
+      } 
+    }),
+    prisma.subscription.aggregate({
+      _sum: { price: true },
+      where: { 
+        status: 'active',
+        tenant: { status: 'active' }
       }
-    } catch (error) {
-      console.error('Error obteniendo info del usuario:', error);
-      router.push('/login');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    }),
+    prisma.tenant.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            branches: true,
+            portals: true
+          }
+        }
+      }
+    }),
+    prisma.subscription.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        tenant: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        plan: {
+          select: {
+            name: true
+          }
+        }
+      }
+    })
+  ]);
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Error en logout:', error);
-      router.push('/login');
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-white">Cargando...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Redirigirá al login
-  }
+  const mrr = totalMRR._sum.price || 0;
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="space-y-6">
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">HS</span>
-            </div>
-            <h1 className="text-xl font-semibold text-white">HotSpot SaaS</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">Panel de Administración</h1>
+        <p className="text-slate-400">Vista general de la plataforma HotSpot SaaS</p>
+      </div>
+
+      {/* Métricas Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-slate-400">Total Clientes</h3>
+            <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm text-white">{user.name}</p>
-              <p className="text-xs text-slate-400">{user.email}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
-            >
-              Cerrar sesión
-            </button>
+          <div className="text-2xl font-bold text-white">{totalClientes}</div>
+          <p className="text-xs text-slate-400">Clientes registrados</p>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-slate-400">Clientes Activos</h3>
+            <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="text-2xl font-bold text-green-600">{clientesActivos}</div>
+          <p className="text-xs text-slate-400">Suscripciones activas</p>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-slate-400">Trials Activos</h3>
+            <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="text-2xl font-bold text-yellow-600">{trialsActivos}</div>
+          <p className="text-xs text-slate-400">Período de prueba</p>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-slate-400">MRR Estimado</h3>
+            <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+          </div>
+          <div className="text-2xl font-bold text-blue-600">${mrr.toFixed(2)}</div>
+          <p className="text-xs text-slate-400">Ingreso mensual recurrente</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Últimos Clientes */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Últimos Clientes Registrados</h3>
+          <div className="space-y-4">
+            {ultimosClientes.map((cliente) => (
+              <div key={cliente.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
+                <div>
+                  <p className="font-medium text-white">{cliente.name}</p>
+                  <p className="text-sm text-slate-400">{cliente.email}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400">
+                    {new Date(cliente.createdAt).toLocaleDateString('es-ES')}
+                  </p>
+                  <div className="flex space-x-2 text-xs">
+                    <span className="text-blue-400">{cliente._count.branches} sucursales</span>
+                    <span className="text-green-400">{cliente._count.portales} portales</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 bg-slate-900 border-r border-slate-800 min-h-screen">
-          <nav className="p-4 space-y-2">
-            <a
-              href="/dashboard"
-              className="block px-4 py-2 bg-blue-600 text-white rounded-lg"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/dashboard/portals"
-              className="block px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Portales
-            </a>
-            <a
-              href="/dashboard/branches"
-              className="block px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Sucursales
-            </a>
-            <a
-              href="/dashboard/visitors"
-              className="block px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Visitantes
-            </a>
-            <a
-              href="/dashboard/campaigns"
-              className="block px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Campañas
-            </a>
-            <a
-              href="/dashboard/settings"
-              className="block px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Configuración
-            </a>
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-8">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">
-              Bienvenido, {user.name}
-            </h2>
-            <p className="text-slate-400">
-              Gestiona tus portales WiFi y monitorea el rendimiento de tu negocio
-            </p>
+        {/* Últimas Suscripciones */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Últimas Suscripciones</h3>
+          <div className="space-y-4">
+            {ultimasSuscripciones.map((suscripcion) => (
+              <div key={suscripcion.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
+                <div>
+                  <p className="font-medium text-white">{suscripcion.tenant.name}</p>
+                  <p className="text-sm text-slate-400">{suscripcion.tenant.email}</p>
+                  <p className="text-xs text-blue-400">{suscripcion.plan.name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-green-600">${suscripcion.price}</p>
+                  <p className="text-xs text-slate-400">
+                    {new Date(suscripcion.createdAt).toLocaleDateString('es-ES')}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <span className="text-2xl font-bold text-white">0</span>
-              </div>
-              <p className="text-slate-400 text-sm">Clientes activos</p>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                  </svg>
-                </div>
-                <span className="text-2xl font-bold text-white">0</span>
-              </div>
-              <p className="text-slate-400 text-sm">Portales activos</p>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <span className="text-2xl font-bold text-white">0</span>
-              </div>
-              <p className="text-slate-400 text-sm">Sesiones hoy</p>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-yellow-600/20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <span className="text-2xl font-bold text-white">$0</span>
-              </div>
-              <p className="text-slate-400 text-sm">MRR</p>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Acciones rápidas</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-left">
-                <div className="font-medium">Crear Portal</div>
-                <div className="text-sm opacity-90">Configurar un nuevo portal cautivo</div>
-              </button>
-              <button className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors text-left">
-                <div className="font-medium">Agregar Sucursal</div>
-                <div className="text-sm opacity-90">Registrar una nueva ubicación</div>
-              </button>
-              <button className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors text-left">
-                <div className="font-medium">Ver Reportes</div>
-                <div className="text-sm opacity-90">Análisis y estadísticas detalladas</div>
-              </button>
-            </div>
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   );

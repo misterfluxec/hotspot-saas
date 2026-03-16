@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { headers } from 'next/headers';
 
 interface User {
   id: string;

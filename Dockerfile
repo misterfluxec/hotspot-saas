@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
+RUN corepack enable && corepack prepare yarn@stable --activate 
 WORKDIR /app
 
 FROM base AS deps

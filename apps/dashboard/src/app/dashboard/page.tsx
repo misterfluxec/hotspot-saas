@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 const prisma = new PrismaClient();
 
@@ -21,7 +22,7 @@ export default async function SuperAdminDashboard() {
       } 
     }),
     prisma.subscription.aggregate({
-      _sum: { price: true },
+      _sum: { amountUsd: true },
       where: { 
         status: 'active',
         tenant: { status: 'active' }
@@ -46,7 +47,7 @@ export default async function SuperAdminDashboard() {
         tenant: {
           select: {
             name: true,
-            email: true
+            billingEmail: true
           }
         },
         plan: {
@@ -58,7 +59,7 @@ export default async function SuperAdminDashboard() {
     })
   ]);
 
-  const mrr = totalMRR._sum.price || 0;
+  const mrr = totalMRR._sum.amountUsd || 0;
 
   return (
     <div className="space-y-6">
@@ -124,7 +125,7 @@ export default async function SuperAdminDashboard() {
               <div key={cliente.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
                 <div>
                   <p className="font-medium text-white">{cliente.name}</p>
-                  <p className="text-sm text-slate-400">{cliente.email}</p>
+                  <p className="text-sm text-slate-400">{cliente.billingEmail}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-400">
@@ -132,7 +133,7 @@ export default async function SuperAdminDashboard() {
                   </p>
                   <div className="flex space-x-2 text-xs">
                     <span className="text-blue-400">{cliente._count.branches} sucursales</span>
-                    <span className="text-green-400">{cliente._count.portales} portales</span>
+                    <span className="text-green-400">{cliente._count.portals} portales</span>
                   </div>
                 </div>
               </div>
@@ -148,11 +149,11 @@ export default async function SuperAdminDashboard() {
               <div key={suscripcion.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
                 <div>
                   <p className="font-medium text-white">{suscripcion.tenant.name}</p>
-                  <p className="text-sm text-slate-400">{suscripcion.tenant.email}</p>
+                  <p className="text-sm text-slate-400">{suscripcion.tenant.billingEmail}</p>
                   <p className="text-xs text-blue-400">{suscripcion.plan.name}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium text-green-600">${suscripcion.price}</p>
+                  <p className="font-medium text-green-600">${suscripcion.amountUsd}</p>
                   <p className="text-xs text-slate-400">
                     {new Date(suscripcion.createdAt).toLocaleDateString('es-ES')}
                   </p>

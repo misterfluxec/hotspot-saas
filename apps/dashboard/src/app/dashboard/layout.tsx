@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { verifyJWT } from '../../../lib/auth';
+import { verifyJWT } from '../../../../lib/auth';
 
 export default async function DashboardLayout({
   children,

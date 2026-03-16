@@ -1,5 +1,5 @@
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 RUN corepack enable && corepack prepare yarn@stable --activate 
 WORKDIR /app
 
@@ -22,7 +22,8 @@ RUN npx prisma generate --schema packages/db/prisma/schema.prisma
 
 RUN cd apps/dashboard && npm run build
 
-FROM base AS runner
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

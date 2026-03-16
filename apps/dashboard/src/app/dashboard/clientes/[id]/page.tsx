@@ -11,17 +11,9 @@ export default async function ClienteDetallePage({
   const cliente = await prisma.tenant.findUnique({
     where: { id: params.id },
     include: {
-      branches: {
-        include: {
-          _count: {
-            select: {
-              portals: true
-            }
-          }
-        }
-      },
+      branches: true,
       portals: true,
-      subscription: {
+      subscriptions: {
         include: {
           plan: true
         }
@@ -60,7 +52,7 @@ export default async function ClienteDetallePage({
           <h1 className="text-3xl font-bold text-white mb-2">
             {cliente.name}
           </h1>
-          <p className="text-slate-400">{cliente.email}</p>
+          <p className="text-slate-400">{cliente.billingEmail}</p>
         </div>
         <div className="flex space-x-3">
           <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
@@ -96,7 +88,7 @@ export default async function ClienteDetallePage({
                 <label className="block text-sm font-medium text-slate-400 mb-1">
                   Email
                 </label>
-                <p className="text-white">{cliente.email}</p>
+                <p className="text-white">{cliente.billingEmail}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">
@@ -115,6 +107,8 @@ export default async function ClienteDetallePage({
                     ? 'bg-yellow-100 text-yellow-800'
                     : cliente.status === 'suspended'
                     ? 'bg-red-100 text-red-800'
+                    : cliente.status === 'cancelled'
+                    ? 'bg-gray-100 text-gray-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}>
                   {cliente.status === 'active' ? 'Activo' :
@@ -154,30 +148,34 @@ export default async function ClienteDetallePage({
                 Cambiar plan
               </button>
             </div>
-            {cliente.subscription ? (
+            {cliente.subscriptions && cliente.subscriptions.length > 0 ? (
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Plan:</span>
-                  <span className="text-white font-medium">
-                    {cliente.subscription.plan.name}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Precio:</span>
-                  <span className="text-green-600 font-medium">
-                    ${cliente.subscription.price}/mes
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Estado:</span>
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    cliente.subscription.status === 'active' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {cliente.subscription.status === 'active' ? 'Activo' : 'Inactivo'}
-                  </span>
-                </div>
+                {cliente.subscriptions.map((subscription) => (
+                  <div key={subscription.id} className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Plan:</span>
+                      <span className="text-white font-medium">
+                        {subscription.plan.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Precio:</span>
+                      <span className="text-green-600 font-medium">
+                        ${subscription.amountUsd}/mes
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Estado:</span>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        subscription.status === 'active' 
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {subscription.status === 'active' ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-slate-400">Sin suscripción activa</p>
@@ -187,7 +185,7 @@ export default async function ClienteDetallePage({
           {/* Lista de Sucursales */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">
-              Sucursales ({cliente._count.branches})
+              Sucursales ({cliente.branches.length})
             </h2>
             <div className="space-y-3">
               {cliente.branches.map((sucursal) => (
@@ -198,7 +196,7 @@ export default async function ClienteDetallePage({
                   </div>
                   <div className="text-right">
                     <span className="text-sm text-blue-400">
-                      {sucursal._count.portals} portales
+                      Portal info
                     </span>
                   </div>
                 </div>
@@ -209,21 +207,21 @@ export default async function ClienteDetallePage({
           {/* Lista de Portales */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">
-              Portales Activos ({cliente._count.portals})
+              Portales Activos ({cliente.portals.length})
             </h2>
             <div className="space-y-3">
               {cliente.portals.map((portal) => (
                 <div key={portal.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
                   <div>
                     <p className="font-medium text-white">{portal.name}</p>
-                    <p className="text-sm text-slate-400">{portal.url}</p>
+                    <p className="text-sm text-slate-400">{portal.subdomain}.labodegaec.com</p>
                   </div>
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    portal.status === 'active' 
+                    portal.isPublished 
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {portal.status === 'active' ? 'Activo' : 'Inactivo'}
+                    {portal.isPublished ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
               ))}
@@ -248,7 +246,7 @@ export default async function ClienteDetallePage({
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-green-600">${pago.price}</p>
+                      <p className="font-medium text-green-600">${pago.amountUsd}</p>
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         pago.status === 'active' 
                           ? 'bg-green-100 text-green-800'

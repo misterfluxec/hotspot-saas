@@ -59,12 +59,12 @@ export default async function ClientesPage({
             branches: true
           }
         },
-        subscription: {
+        subscriptions: {
           include: {
             plan: {
               select: {
                 name: true,
-                price: true
+                priceMonthly: true
               }
             }
           }
@@ -195,12 +195,14 @@ export default async function ClientesPage({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-300">
-                      {cliente.email}
+                      {cliente.billingEmail}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-300">
-                      {cliente.subscription?.plan?.name || 'Sin plan'}
+                      {cliente.subscriptions?.map((subscription) => (
+                        <div key={subscription.id}>{subscription.plan.name}</div>
+                      )) || 'Sin plan'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

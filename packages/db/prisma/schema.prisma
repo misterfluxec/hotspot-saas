@@ -1,0 +1,190 @@
+// Esquema de base de datos para HotSpot SaaS
+// Sistema multi-tenant para gestión de WiFi en negocios
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tabla de tenants (clientes multi-tenant)
+model Tenant {
+  id            String   @id @default(cuid())
+  slug          String   @unique // URL única para cada tenant
+  name          String
+  businessType  String   @map("business_type") // tipo de negocio: restaurante, hotel, oficina, etc.
+  logoUrl       String?  @map("logo_url")
+  status        String   @default("trial") // trial, active, suspended, cancelled
+  trialEndsAt   DateTime? @map("trial_ends_at")
+  billingEmail  String   @map("billing_email")
+  planId        String?  @map("plan_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  plan         Plan?          @relation(fields: [planId], references: [id])
+  users        User[]
+  branches     Branch[]
+  portals      Portal[]
+  visitors     Visitor[]
+  campaigns    Campaign[]
+  subscriptions Subscription[]
+
+  @@map("tenants")
+}
+
+// Tabla de usuarios por tenant
+model User {
+  id           String    @id @default(cuid())
+  tenantId     String    @map("tenant_id")
+  email        String
+  passwordHash String    @map("password_hash")
+  role         String    @default("user") // admin, user, readonly
+  name         String
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+// Tabla de planes de suscripción
+model Plan {
+  id            String   @id @default(cuid())
+  name          String
+  priceMonthly  Float    @map("price_monthly")
+  maxPortals    Int      @map("max_portals")
+  maxBranches   Int      @map("max_branches")
+  maxVisitorsMo Int      @map("max_visitors_mo")
+  aiRequestsMo  Int      @map("ai_requests_mo")
+  features      Json     // características del plan en formato JSON
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenants       Tenant[]
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// Tabla de sucursales de cada tenant
+model Branch {
+  id             String    @id @default(cuid())
+  tenantId       String    @map("tenant_id")
+  name           String
+  address        String
+  timezone       String    @default("America/Guayaquil")
+  routerType     String    @map("router_type") // mikrotik, ubiquiti, cisco, etc.
+  routerIp       String    @map("router_ip")
+  routerUser     String    @map("router_user")
+  routerPassEnc  String    @map("router_pass_enc") // contraseña encriptada
+  portalId       String?   @map("portal_id")
+  isOnline       Boolean   @default(false) @map("is_online")
+  lastSeenAt     DateTime? @map("last_seen_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  portal    Portal?  @relation(fields: [portalId], references: [id])
+  visitors  Visitor[]
+  campaigns Campaign[]
+
+  @@map("branches")
+}
+
+// Tabla de portales cautivos
+model Portal {
+  id             String   @id @default(cuid())
+  tenantId       String   @map("tenant_id")
+  name           String
+  template       String   // template del portal: modern, classic, corporate, etc.
+  subdomain      String   // subdomain.labodegaec.com
+  config         Json     // configuración específica del portal
+  sessionMinutes Int      @default(60) @map("session_minutes")
+  speedKbps      Int?     @map("speed_kbps") // límite de velocidad en kbps
+  quotaMb        Int?     @map("quota_mb") // cuota de datos en MB
+  isPublished    Boolean  @default(false) @map("is_published")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branches Branch[]
+
+  @@unique([tenantId, subdomain])
+  @@map("portals")
+}
+
+// Tabla de visitantes
+model Visitor {
+  id           String    @id @default(cuid())
+  tenantId     String    @map("tenant_id")
+  branchId     String?   @map("branch_id")
+  name         String?
+  email        String?
+  phone        String?
+  macAddress   String    @map("mac_address")
+  visitCount   Int       @default(1) @map("visit_count")
+  firstSeenAt  DateTime  @default(now()) @map("first_seen_at")
+  lastSeenAt   DateTime  @default(now()) @map("last_seen_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, macAddress])
+  @@map("visitors")
+}
+
+// Tabla de campañas de marketing
+model Campaign {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  name       String
+  type       String   // banner, popup, email, sms
+  assetUrl   String?  @map("asset_url") // URL del archivo multimedia
+  clickUrl   String?  @map("click_url") // URL de destino al hacer clic
+  weight     Int      @default(1) // peso para selección aleatoria
+  schedule   Json     // configuración de programación
+  branchIds  String[] @map("branch_ids") // IDs de sucursales donde se muestra
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branches Branch[]
+
+  @@map("campaigns")
+}
+
+// Tabla de suscripciones activas
+model Subscription {
+  id                String    @id @default(cuid())
+  tenantId          String    @map("tenant_id")
+  planId            String    @map("plan_id")
+  mpPreapprovalId   String?   @map("mp_preapproval_id") // ID de MercadoPago
+  status            String    @default("pending") // pending, active, cancelled, paused
+  currentPeriodEnd  DateTime? @map("current_period_end")
+  amountUsd         Float     @map("amount_usd")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  @@map("subscriptions")
+}

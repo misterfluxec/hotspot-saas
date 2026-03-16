@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'fallback-secret'
+)
 
 export interface LoginCredentials {
   email: string;
@@ -88,15 +92,11 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResu
     };
 
     // Generar JWT token
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET no está configurado en las variables de entorno');
-    }
-
-    const token = jwt.sign(payload, jwtSecret, {
-      expiresIn: '7d',
-      issuer: 'hotspot-saas',
-      audience: 'hotspot-dashboard',
+    const token = await generateJWT({
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      email: user.email,
     });
 
     // Actualizar último login
@@ -128,21 +128,30 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResu
   }
 }
 
-/**
- * Verifica y decodifica un token JWT
- */
-export function verifyJWT(token: string): JWTPayload | null {
-  try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET no está configurado');
-    }
+export async function generateJWT(payload: {
+  userId: string
+  tenantId: string | null
+  role: string
+  email: string
+}) {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(JWT_SECRET)
+}
 
-    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
-    return decoded;
-  } catch (error) {
-    console.error('Error verificando JWT:', error);
-    return null;
+export async function verifyJWT(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    return payload as {
+      userId: string
+      tenantId: string | null
+      role: string
+      email: string
+    }
+  } catch {
+    return null
   }
 }
 

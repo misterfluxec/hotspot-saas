@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT } from '../../../../lib/auth';
+import { verifyJWT } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar token
-    const payload = verifyJWT(token);
+    const payload = await verifyJWT(token);
     
     if (!payload) {
       return NextResponse.json(
@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       id: payload.userId,
       email: payload.email,
-      name: payload.name,
       role: payload.role,
       tenantId: payload.tenantId,
     });

@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   }
 
   // Verificar token
-  const payload = verifyJWT(token);
+  const payload = await verifyJWT(token);
   
   if (!payload || payload.role !== 'admin') {
     redirect('/dashboard');
@@ -102,7 +102,7 @@ export default async function DashboardLayout({
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Panel de Administración</h2>
             <div className="flex items-center space-x-4">
-              <span className="text-slate-300">{payload.name}</span>
+              <span className="text-slate-300">{payload.email}</span>
               <form action="/api/auth/logout" method="POST">
                 <button
                   type="submit"

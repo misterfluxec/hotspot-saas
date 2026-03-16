@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyJWT } from './lib/auth';
+import { verifyJWT } from '@/lib/auth';
 
 // Rutas públicas que no requieren autenticación
 const publicRoutes = ['/login'];
@@ -8,7 +8,7 @@ const publicRoutes = ['/login'];
 // Rutas de API que no requieren autenticación
 const publicApiRoutes = ['/api/auth/login'];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Permitir rutas públicas sin autenticación
@@ -42,7 +42,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Verificar el token
-  const payload = verifyJWT(token);
+  const payload = await verifyJWT(token);
   
   if (!payload) {
     // Token inválido, redirigir al login
@@ -56,24 +56,13 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next();
   response.headers.set('x-user-id', payload.userId);
   response.headers.set('x-user-email', payload.email);
-  response.headers.set('x-user-name', payload.name);
   response.headers.set('x-user-role', payload.role);
-  response.headers.set('x-tenant-id', payload.tenantId);
+  response.headers.set('x-tenant-id', payload.tenantId || '');
 
   return response;
 }
 
 // Configurar qué rutas debe manejar el middleware
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

@@ -5,6 +5,44 @@ import { generateJWT } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
+// Función simulada de envío de email (puede ser reemplazada por Resend/Nodemailer)
+async function sendWelcomeEmail(businessName: string, email: string) {
+  try {
+    // Simulación de envío de email
+    console.log(`
+      📧 EMAIL DE BIENVENIDA ENVIADO A: ${email}
+      
+      Asunto: ¡Bienvenido a la familia de HotSpot SaaS, ${businessName}!
+      
+      Cuerpo:
+      ¡Hola ${businessName}!
+      
+      Estamos emocionados de ayudarte a transformar tu WiFi en una herramienta de crecimiento. 
+      Tu prueba de 14 días ha comenzado. Vamos a configurar tu primer portal.
+      
+      Tu panel de administración está listo en: https://labodegaec.com/cliente
+      
+      Si necesitas ayuda, estamos aquí para ti.
+      
+      El equipo de HotSpot SaaS 🚀
+    `);
+
+    // Aquí iría la integración real con Resend/Nodemailer:
+    // const resend = new Resend(process.env.RESEND_API_KEY);
+    // await resend.emails.send({
+    //   from: 'onboarding@hotspot-saas.com',
+    //   to: [email],
+    //   subject: `¡Bienvenido a la familia de HotSpot SaaS, ${businessName}!`,
+    //   html: `...`
+    // });
+
+    return true;
+  } catch (error) {
+    console.error('Error enviando email de bienvenida:', error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { businessName, businessType, email, password, planId } = await request.json();
@@ -91,6 +129,9 @@ export async function POST(request: NextRequest) {
         amountUsd: plan.priceMonthly,
       }
     });
+
+    // Enviar email de bienvenida
+    await sendWelcomeEmail(businessName, email);
 
     return NextResponse.json({
       message: 'Registro exitoso',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Wifi, Palette, CheckCircle } from 'lucide-react';
+import { Upload, Wifi, Palette, CheckCircle, Sparkles, MapPin, Settings } from 'lucide-react';
 
 interface OnboardingData {
   logo?: File;
@@ -57,6 +57,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     address: '',
     branchName: '',
@@ -67,6 +68,16 @@ export default function OnboardingPage() {
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
+
+  // Mostrar confetti al llegar al paso 4
+  useEffect(() => {
+    if (currentStep === 4) {
+      setShowConfetti(true);
+      // Ocultar confetti después de 5 segundos
+      const timer = setTimeout(() => setShowConfetti(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -291,8 +302,28 @@ export default function OnboardingPage() {
 
       case 4:
         return (
-          <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10">
-            <CardContent className="pt-8">
+          <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10 relative overflow-hidden">
+            {/* Confetti Animation */}
+            {showConfetti && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="confetti-container">
+                  {[...Array(50)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="confetti-piece"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 3}s`,
+                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][Math.floor(Math.random() * 5)],
+                        animationDuration: `${3 + Math.random() * 2}s`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <CardContent className="pt-8 relative z-10">
               <div className="text-center space-y-6">
                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle className="w-10 h-10 text-green-400" />
@@ -403,3 +434,37 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
+// Estilos CSS para el confetti (agregados como JSX para mantener todo en un archivo)
+const ConfettiStyles = () => (
+  <style jsx>{`
+    .confetti-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+      animation: confetti-fall linear forwards;
+    }
+    
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  `}</style>
+);

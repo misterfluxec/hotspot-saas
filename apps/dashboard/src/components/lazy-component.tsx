@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface LazyComponentProps {
@@ -12,8 +12,6 @@ export function LazyComponent({
   fallback = <LoadingSpinner />, 
   children 
 }: LazyComponentProps) {
-  const LazyChildren = lazy(() => import('react').then(mod => ({ default: mod.Children }));
-
   return (
     <Suspense fallback={fallback}>
       {children}
@@ -43,7 +41,7 @@ export const LazyClients = lazy(() =>
 
 // Wrapper para lazy loading con error boundary
 export function LazyWrapper({ 
-  component: React.ComponentType<any>,
+  component: Component,
   fallback = <LoadingSpinner /> 
 }: { 
   component: React.ComponentType<any>;
@@ -51,7 +49,7 @@ export function LazyWrapper({
 }) {
   return (
     <Suspense fallback={fallback}>
-      <component />
+      <Component />
     </Suspense>
   );
 }

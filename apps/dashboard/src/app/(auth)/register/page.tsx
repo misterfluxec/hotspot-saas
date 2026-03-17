@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 interface Plan {
   id: string;
@@ -121,7 +121,6 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
       <div className="w-full max-w-6xl">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">
             Comienza tu HotSpot SaaS
@@ -132,7 +131,6 @@ export default function RegisterPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Formulario */}
           <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10">
             <CardHeader>
               <CardTitle className="text-xl text-white">Datos del Negocio</CardTitle>
@@ -235,7 +233,6 @@ export default function RegisterPage() {
             </CardContent>
           </Card>
 
-          {/* Selección de Planes */}
           <div>
             <h2 className="text-2xl font-bold text-white mb-6">Elige tu Plan</h2>
             <div className="space-y-4">
@@ -258,7 +255,7 @@ export default function RegisterPage() {
                   )}
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className={`text-lg ${selectedPlan === plan.id ? 'text-white' : 'text-zinc-300'}`}>
+                      <CardTitle className="text-lg text-white">
                         {plan.name}
                       </CardTitle>
                       <div className={`text-2xl font-bold ${selectedPlan === plan.id ? 'text-white' : 'text-zinc-300'}`}>
@@ -283,13 +280,6 @@ export default function RegisterPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
-
-            <div className="mt-6 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-              <p className="text-sm text-zinc-400">
-                <strong>Beneficios incluidos:</strong> Todos los planes incluyen acceso al panel de administración, 
-                analytics básico y soporte técnico. Puedes cambiar tu plan en cualquier momento.
-              </p>
             </div>
           </div>
         </div>

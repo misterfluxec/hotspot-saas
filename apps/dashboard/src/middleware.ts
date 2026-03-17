@@ -3,10 +3,10 @@ import type { NextRequest } from 'next/server';
 import { verifyJWT } from '@/lib/auth';
 
 // Rutas públicas que no requieren autenticación
-const publicRoutes = ['/login'];
+const publicRoutes = ['/login', '/register', '/onboarding'];
 
 // Rutas de API que no requieren autenticación
-const publicApiRoutes = ['/api/auth/login'];
+const publicApiRoutes = ['/api/auth/login', '/api/auth/register'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

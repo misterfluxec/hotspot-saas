@@ -122,8 +122,18 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Forgot password link */}
+      {/* Register link */}
       <div className="mt-6 text-center">
+        <p className="text-slate-400 text-sm">
+          ¿No tienes cuenta?{' '}
+          <a href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
+            Regístrate aquí
+          </a>
+        </p>
+      </div>
+
+      {/* Forgot password link */}
+      <div className="text-center">
         <a href="#" className="text-blue-400 hover:text-blue-300 text-sm transition-colors">
           ¿Olvidaste tu contraseña?
         </a>

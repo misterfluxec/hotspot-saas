@@ -1,306 +1,231 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wifi, ArrowRight, Eye, EyeOff } from 'lucide-react';
-
-const plans = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 29,
-    description: 'Perfecto para empezar'
-  },
-  {
-    id: 'business',
-    name: 'Business',
-    price: 79,
-    description: 'Ideal para crecimiento'
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 199,
-    description: 'Para grandes empresas'
-  }
-];
-
-const businessTypes = [
-  'Restaurante',
-  'Hotel',
-  'Cafetería',
-  'Tienda',
-  'Oficina',
-  'Gimnasio',
-  'Evento',
-  'Otro'
-];
+import Link from "next/link";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import { cn } from "@/lib/utils"; // Asumiendo que tienes una utilidad para combinar clases de Tailwind
+import { Button } from "@/components/ui/button"; // Asumiendo shadcn/ui Button
+import { Input } from "@/components/ui/input"; // Asumiendo shadcn/ui Input
+import { Label } from "@/components/ui/label"; // Asumiendo shadcn/ui Label
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Asumiendo shadcn/ui RadioGroup
+import { Checkbox } from "@/components/ui/checkbox"; // Asumiendo shadcn/ui Checkbox
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Asumiendo shadcn/ui Select
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState('business');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    businessName: '',
-    businessType: '',
-    email: '',
-    password: '',
-    acceptTerms: false
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    if (!formData.acceptTerms) {
-      alert('Debes aceptar los términos y condiciones');
-      return;
-    }
+    const formData = new FormData(e.currentTarget);
+    const businessName = formData.get("businessName");
+    const businessType = formData.get("businessType");
+    const email = formData.get("email");
+    const password = formData.get("password");
+    const selectedPlan = formData.get("plan");
+    const termsAccepted = formData.get("terms");
 
-    setIsLoading(true);
-    
+    console.log("Datos del formulario:", {
+      businessName,
+      businessType,
+      email,
+      password,
+      selectedPlan,
+      termsAccepted,
+    });
+
+    // CRÍTICO: Normalización del planId antes de enviar al backend
+    const normalizedPlanId = String(selectedPlan).toLowerCase().trim();
+    console.log("Enviando planId normalizado:", normalizedPlanId);
+
+    // Aquí iría la lógica para enviar los datos al backend
+    // Por ejemplo, usando fetch o una librería como axios
     try {
-      // Debug: Verificar qué plan ID se está enviando
-      console.log('Enviando planId:', selectedPlan);
-      
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          businessName: formData.businessName,
-          businessType: formData.businessType,
-          email: formData.email,
-          password: formData.password,
-          planId: selectedPlan // Enviar exactamente el ID del plan
+          businessName,
+          businessType,
+          email,
+          password,
+          planId: normalizedPlanId, // Usar el planId normalizado
+          termsAccepted: !!termsAccepted,
         }),
       });
 
-      if (response.ok) {
-        router.push('/login?message=Registro exitoso. Por favor inicia sesión.');
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Error en el registro');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error en el registro:", errorData);
+        alert(`Error en el registro: ${errorData.message || 'Hubo un problema.'}`);
+        return;
       }
+
+      const data = await response.json();
+      console.log("Registro exitoso:", data);
+      alert("¡Registro exitoso! Redirigiendo...");
+      // Redirigir al usuario a una página de éxito o dashboard
     } catch (error) {
-      alert('Error de conexión');
-    } finally {
-      setIsLoading(false);
+      console.error("Error de red o inesperado:", error);
+      alert("Ocurrió un error inesperado. Inténtalo de nuevo.");
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden bg-black">
-      
-      {/* Panel Izquierdo - Branding (50%) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 flex-col justify-center items-center text-center text-white">
-        {/* Logo */}
-        <div className="flex items-center justify-center space-x-3 mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Wifi className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-3xl font-bold" style={{ fontFamily: 'Geist Sans' }}>
-            HotSpot SaaS
-          </span>
+    <div className={cn(
+      "min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden",
+      GeistSans.variable, GeistMono.variable // Aplicar fuentes Geist
+    )}>
+      {/* Panel Izquierdo (Branding) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 flex-col justify-center items-center text-center text-white font-sans">
+        {/* Logo Placeholder */}
+        <svg
+          className="h-12 w-12 mb-6 text-blue-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <h1 className="text-4xl font-bold mb-4 leading-tight">Transforma tu WiFi en una herramienta de marketing</h1>
+        <p className="text-lg text-zinc-300 mb-8 max-w-md whitespace-normal">Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real.</p>
+        <div className="text-zinc-400 text-sm">
+          <p className="mb-2">✓ Datos</p>
+          <p className="mb-2">✓ Ventas</p>
+          <p>✓ Analytics</p>
         </div>
-        
-        {/* Mensaje Potente */}
-        <div className="max-w-lg space-y-6">
-          <h1 className="text-4xl font-bold leading-tight" style={{ fontFamily: 'Geist Sans' }}>
-            Transforma tu WiFi en una herramienta de marketing
-          </h1>
-          <p className="text-lg text-zinc-300" style={{ fontFamily: 'Geist Sans' }}>
-            Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real
-          </p>
-        </div>
-        
-        {/* Stat Social Proof */}
-        <div className="mt-12 pt-8 border-t border-zinc-800">
-          <div className="text-3xl font-bold" style={{ fontFamily: 'Geist Mono' }}>
-            500+
-          </div>
-          <div className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-            negocios confían en nosotros
-          </div>
-        </div>
+        <p className="mt-8 text-zinc-400 text-sm">Más de <span className="font-mono text-blue-400">500+</span> negocios confían en nosotros</p>
       </div>
 
-      {/* Panel Derecho - Formulario de Registro (50%) */}
-      <div className="w-full lg:w-1/2 bg-black overflow-y-auto">
-        <div className="max-w-md mx-auto py-12 px-6 space-y-8">
-          
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Sans' }}>
-              Crear cuenta gratis
-            </h2>
-            <p className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-              14 días sin tarjeta
-            </p>
+      {/* Panel Derecho (Formulario de Registro ) */}
+      <div className="w-full lg:w-1/2 bg-black overflow-y-auto flex items-center justify-center py-12 px-6">
+        <div className="max-w-md mx-auto w-full">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">Crear cuenta gratis</h2>
+            <p className="text-zinc-400">14 días sin tarjeta</p>
           </div>
 
-          {/* Registration Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="businessName" className="text-zinc-300 text-sm font-medium" style={{ fontFamily: 'Geist Sans' }}>
-                  Nombre del negocio
-                </Label>
-                <Input
-                  id="businessName"
-                  type="text"
-                  value={formData.businessName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                  className="mt-2 h-12 bg-zinc-900 border-zinc-800 text-white focus:border-blue-500 px-4"
-                  placeholder="Mi Restaurante S.A."
-                  style={{ fontFamily: 'Geist Sans' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="businessType" className="text-zinc-300 text-sm font-medium" style={{ fontFamily: 'Geist Sans' }}>
-                  Tipo de negocio
-                </Label>
-                <Select value={formData.businessType} onValueChange={(value) => setFormData(prev => ({ ...prev, businessType: value }))}>
-                  <SelectTrigger className="mt-2 h-12 bg-zinc-900 border-zinc-800 text-white focus:border-blue-500 px-4" style={{ fontFamily: 'Geist Sans' }}>
-                    <SelectValue placeholder="Selecciona tu tipo" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-zinc-800">
-                    {businessTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="text-white hover:bg-zinc-800" style={{ fontFamily: 'Geist Sans' }}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="email" className="text-zinc-300 text-sm font-medium" style={{ fontFamily: 'Geist Sans' }}>
-                  Email administrador
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="mt-2 h-12 bg-zinc-900 border-zinc-800 text-white focus:border-blue-500 px-4"
-                  placeholder="admin@negocio.com"
-                  style={{ fontFamily: 'Geist Sans' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password" className="text-zinc-300 text-sm font-medium" style={{ fontFamily: 'Geist Sans' }}>
-                  Contraseña
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    className="mt-2 h-12 bg-zinc-900 border-zinc-800 text-white focus:border-blue-500 px-4 pr-12"
-                    placeholder="••••••"
-                    style={{ fontFamily: 'Geist Sans' }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Plan Selection - Grid de 3 Columnas */}
-            <div>
-              <Label className="text-zinc-300 text-sm font-medium mb-4 block" style={{ fontFamily: 'Geist Sans' }}>
-                Elige tu plan
-              </Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    onClick={() => setSelectedPlan(plan.id)}
-                    className={`cursor-pointer transition-all duration-200 border border-zinc-700 rounded-lg p-4 text-center ${
-                      selectedPlan === plan.id
-                        ? 'border-blue-600 bg-blue-950'
-                        : 'bg-zinc-900 hover:border-zinc-600'
-                    }`}
-                  >
-                    <div className="font-medium text-white mb-2" style={{ fontFamily: 'Geist Sans' }}>
-                      {plan.name}
-                    </div>
-                    <div className="text-2xl font-bold text-blue-400" style={{ fontFamily: 'Geist Mono' }}>
-                      ${plan.price}
-                    </div>
-                    <div className="text-xs text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-                      /mes
-                    </div>
-                    <div className="text-xs text-zinc-500 mt-2" style={{ fontFamily: 'Geist Sans' }}>
-                      {plan.description}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Terms Checkbox */}
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={formData.acceptTerms}
-                onChange={(e) => setFormData(prev => ({ ...prev, acceptTerms: e.target.checked }))}
-                className="mt-1 w-4 h-4 text-blue-600 bg-zinc-900 border-zinc-700 rounded focus:ring-blue-500"
+            <div className="grid gap-2">
+              <Label htmlFor="businessName" className="text-zinc-300">Nombre del negocio</Label>
+              <Input
+                id="businessName"
+                name="businessName"
+                placeholder="Mi Restaurante S.A."
+                type="text"
+                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4"
                 required
               />
-              <Label htmlFor="terms" className="text-sm text-zinc-400 leading-relaxed" style={{ fontFamily: 'Geist Sans' }}>
-                Acepto los <a href="#" className="text-blue-400 hover:text-blue-300">términos y condiciones</a> y la <a href="#" className="text-blue-400 hover:text-blue-300">política de privacidad</a>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="businessType" className="text-zinc-300">Tipo de negocio</Label>
+              <Select name="businessType" defaultValue="Otro">
+                <SelectTrigger className="bg-zinc-900 border-zinc-800 text-white h-12 px-4">
+                  <SelectValue placeholder="Selecciona tu tipo" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                  <SelectItem value="Restaurante">Restaurante</SelectItem>
+                  <SelectItem value="Hotel">Hotel</SelectItem>
+                  <SelectItem value="Cafeteria">Cafetería</SelectItem>
+                  <SelectItem value="Tienda">Tienda</SelectItem>
+                  <SelectItem value="Oficina">Oficina</SelectItem>
+                  <SelectItem value="Gimnasio">Gimnasio</SelectItem>
+                  <SelectItem value="Evento">Evento</SelectItem>
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="email" className="text-zinc-300">Email administrador</Label>
+              <Input
+                id="email"
+                name="email"
+                placeholder="admin@negocio.com"
+                type="email"
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect="off"
+                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-zinc-300">Contraseña</Label>
+              <Input
+                id="password"
+                name="password"
+                placeholder="••••••"
+                type="password"
+                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-zinc-300">Elige tu plan</Label>
+              <RadioGroup defaultValue="starter" className="grid grid-cols-1 md:grid-cols-3 gap-4" name="plan">
+                <Label
+                  htmlFor="starter"
+                  className="flex flex-col items-center justify-between rounded-lg border p-4 text-white hover:bg-zinc-800 data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600"
+                >
+                  <RadioGroupItem id="starter" value="starter" className="sr-only" />
+                  <div className="text-lg font-bold">Starter</div>
+                  <div className={cn("text-3xl font-mono font-bold text-blue-400 my-2", GeistMono.className)}>$29</div>
+                  <div className="text-zinc-400 text-sm">/mes</div>
+                  <div className="text-zinc-500 text-xs mt-1 text-center">Perfecto para empezar</div>
+                </Label>
+                <Label
+                  htmlFor="business"
+                  className="flex flex-col items-center justify-between rounded-lg border p-4 text-white hover:bg-zinc-800 data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600"
+                >
+                  <RadioGroupItem id="business" value="business" className="sr-only" />
+                  <div className="text-lg font-bold">Business</div>
+                  <div className={cn("text-3xl font-mono font-bold text-blue-400 my-2", GeistMono.className)}>$79</div>
+                  <div className="text-zinc-400 text-sm">/mes</div>
+                  <div className="text-zinc-500 text-xs mt-1 text-center">Ideal para crecimiento</div>
+                </Label>
+                <Label
+                  htmlFor="enterprise"
+                  className="flex flex-col items-center justify-between rounded-lg border p-4 text-white hover:bg-zinc-800 data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600"
+                >
+                  <RadioGroupItem id="enterprise" value="enterprise" className="sr-only" />
+                  <div className="text-lg font-bold">Enterprise</div>
+                  <div className={cn("text-3xl font-mono font-bold text-blue-400 my-2", GeistMono.className)}>$199</div>
+                  <div className="text-zinc-400 text-sm">/mes</div>
+                  <div className="text-zinc-500 text-xs mt-1 text-center">Para grandes empresas</div>
+                </Label>
+              </RadioGroup>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox id="terms" name="terms" required />
+              <Label htmlFor="terms" className="text-sm text-zinc-400 whitespace-normal">
+                Acepto los <Link href="#" className="underline text-blue-400">términos y condiciones</Link> y la <Link href="#" className="underline text-blue-400">política de privacidad</Link>
               </Label>
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
-              disabled={isLoading || !formData.businessName || !formData.businessType || !formData.email || !formData.acceptTerms}
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium transition-all duration-200"
-              style={{ fontFamily: 'Geist Sans' }}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all duration-200 h-12"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creando cuenta...
-                </>
-              ) : (
-                <>
-                  Crear cuenta gratis
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
+              Crear cuenta gratis
             </Button>
           </form>
 
-          {/* Login Link */}
-          <div className="text-center">
-            <p className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-              ¿Ya tienes cuenta?{' '}
-              <a href="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
-                Iniciar sesión
-              </a>
-            </p>
-          </div>
+          <p className="mt-8 text-center text-sm text-zinc-500">
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login" className="underline text-blue-400">
+              Iniciar sesión
+            </Link>
+          </p>
         </div>
       </div>
     </div>

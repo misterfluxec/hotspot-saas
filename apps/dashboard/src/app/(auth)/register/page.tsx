@@ -1,149 +1,195 @@
 'use client';
 
-import Link from "next/link";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
-import { cn } from "@/lib/utils"; // Asumiendo que tienes una utilidad para combinar clases de Tailwind
-import { Button } from "@/components/ui/button"; // Asumiendo shadcn/ui Button
-import { Input } from "@/components/ui/input"; // Asumiendo shadcn/ui Input
-import { Label } from "@/components/ui/label"; // Asumiendo shadcn/ui Label
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Asumiendo shadcn/ui RadioGroup
-import { Checkbox } from "@/components/ui/checkbox"; // Asumiendo shadcn/ui Checkbox
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Asumiendo shadcn/ui Select
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const PLANS = [
+  { id: 'starter', name: 'Starter', price: 29, description: 'Perfecto para empezar' },
+  { id: 'business', name: 'Business', price: 79, description: 'Ideal para crecimiento', recommended: true },
+  { id: 'enterprise', name: 'Enterprise', price: 199, description: 'Para grandes empresas' },
+];
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('business');
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
     const formData = new FormData(e.currentTarget);
-    const businessName = formData.get("businessName");
-    const businessType = formData.get("businessType");
-    const email = formData.get("email");
-    const password = formData.get("password");
-    const selectedPlan = formData.get("plan");
-    const termsAccepted = formData.get("terms");
+    const data = {
+      businessName: formData.get('businessName') as string,
+      businessType: formData.get('businessType') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      planId: selectedPlan.toLowerCase().trim(), // CRÍTICO: Normalización
+      termsAccepted: formData.get('terms') === 'on',
+    };
 
-    console.log("Datos del formulario:", {
-      businessName,
-      businessType,
-      email,
-      password,
-      selectedPlan,
-      termsAccepted,
-    });
+    console.log('📤 Enviando registro:', data);
 
-    // CRÍTICO: Normalización del planId antes de enviar al backend
-    const normalizedPlanId = String(selectedPlan).toLowerCase().trim();
-    console.log("Enviando planId normalizado:", normalizedPlanId);
-
-    // Aquí iría la lógica para enviar los datos al backend
-    // Por ejemplo, usando fetch o una librería como axios
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          businessName,
-          businessType,
-          email,
-          password,
-          planId: normalizedPlanId, // Usar el planId normalizado
-          termsAccepted: !!termsAccepted,
-        }),
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error en el registro:", errorData);
-        alert(`Error en el registro: ${errorData.message || 'Hubo un problema.'}`);
-        return;
+        throw new Error(result.message || 'Error en el registro');
       }
 
-      const data = await response.json();
-      console.log("Registro exitoso:", data);
-      alert("¡Registro exitoso! Redirigiendo...");
-      // Redirigir al usuario a una página de éxito o dashboard
-    } catch (error) {
-      console.error("Error de red o inesperado:", error);
-      alert("Ocurrió un error inesperado. Inténtalo de nuevo.");
+      console.log('✅ Registro exitoso:', result);
+      router.push('/onboarding');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado';
+      setError(errorMessage);
+      console.error('❌ Error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className={cn(
-      "min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden",
-      GeistSans.variable, GeistMono.variable // Aplicar fuentes Geist
+      'min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden bg-black',
+      GeistSans.variable,
+      GeistMono.variable
     )}>
-      {/* Panel Izquierdo (Branding) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 flex-col justify-center items-center text-center text-white font-sans">
-        {/* Logo Placeholder */}
-        <svg
-          className="h-12 w-12 mb-6 text-blue-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <h1 className="text-4xl font-bold mb-4 leading-tight">Transforma tu WiFi en una herramienta de marketing</h1>
-        <p className="text-lg text-zinc-300 mb-8 max-w-md whitespace-normal">Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real.</p>
-        <div className="text-zinc-400 text-sm">
-          <p className="mb-2">✓ Datos</p>
-          <p className="mb-2">✓ Ventas</p>
-          <p>✓ Analytics</p>
-        </div>
-        <p className="mt-8 text-zinc-400 text-sm">Más de <span className="font-mono text-blue-400">500+</span> negocios confían en nosotros</p>
-      </div>
-
-      {/* Panel Derecho (Formulario de Registro ) */}
-      <div className="w-full lg:w-1/2 bg-black overflow-y-auto flex items-center justify-center py-12 px-6">
-        <div className="max-w-md mx-auto w-full">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Crear cuenta gratis</h2>
-            <p className="text-zinc-400">14 días sin tarjeta</p>
+      {/* PANEL IZQUIERDO - BRANDING (50% desktop, oculto móvil) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 flex-col justify-center items-center text-center text-white">
+        <div className="max-w-md space-y-8">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-3">
+            <svg className="w-12 h-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
+            <span className="text-2xl font-bold">HotSpot SaaS</span>
           </div>
 
+          {/* Mensaje Principal */}
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold leading-tight">
+              Transforma tu WiFi en una herramienta de marketing
+            </h1>
+            <p className="text-zinc-400 text-lg">
+              Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real.
+            </p>
+          </div>
+
+          {/* Beneficios */}
+          <div className="space-y-3 text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <span className="text-blue-400 text-sm">✓</span>
+              </div>
+              <span className="text-zinc-300">Captura datos de visitantes automáticamente</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <span className="text-blue-400 text-sm">✓</span>
+              </div>
+              <span className="text-zinc-300">Incrementa ventas con campañas segmentadas</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <span className="text-blue-400 text-sm">✓</span>
+              </div>
+              <span className="text-zinc-300">Analytics en tiempo real de tu negocio</span>
+            </div>
+          </div>
+
+          {/* Social Proof */}
+          <div className="pt-8 border-t border-zinc-800">
+            <p className="text-zinc-500 text-sm">Más de</p>
+            <p className="text-3xl font-bold text-white">500+ negocios</p>
+            <p className="text-zinc-500 text-sm">confían en nosotros</p>
+          </div>
+        </div>
+      </div>
+
+      {/* PANEL DERECHO - FORMULARIO (100% móvil, 50% desktop) */}
+      <div className="w-full lg:w-1/2 bg-black overflow-y-auto flex items-center justify-center py-12 px-6">
+        <div className="max-w-md mx-auto w-full space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold text-white">Crear cuenta gratis</h2>
+            <p className="text-zinc-400">14 días de prueba sin tarjeta de crédito</p>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-2">
-              <Label htmlFor="businessName" className="text-zinc-300">Nombre del negocio</Label>
+            {/* Nombre del Negocio */}
+            <div className="space-y-2">
+              <Label htmlFor="businessName" className="text-zinc-300">
+                Nombre del negocio
+              </Label>
               <Input
                 id="businessName"
                 name="businessName"
                 placeholder="Mi Restaurante S.A."
                 type="text"
-                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4"
+                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4 focus:border-blue-500"
                 required
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="businessType" className="text-zinc-300">Tipo de negocio</Label>
-              <Select name="businessType" defaultValue="Otro">
-                <SelectTrigger className="bg-zinc-900 border-zinc-800 text-white h-12 px-4">
+            {/* Tipo de Negocio */}
+            <div className="space-y-2">
+              <Label htmlFor="businessType" className="text-zinc-300">
+                Tipo de negocio
+              </Label>
+              <Select name="businessType" defaultValue="restaurante">
+                <SelectTrigger className="bg-zinc-900 border-zinc-800 text-white h-12 px-4 focus:border-blue-500">
                   <SelectValue placeholder="Selecciona tu tipo" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                  <SelectItem value="Restaurante">Restaurante</SelectItem>
-                  <SelectItem value="Hotel">Hotel</SelectItem>
-                  <SelectItem value="Cafeteria">Cafetería</SelectItem>
-                  <SelectItem value="Tienda">Tienda</SelectItem>
-                  <SelectItem value="Oficina">Oficina</SelectItem>
-                  <SelectItem value="Gimnasio">Gimnasio</SelectItem>
-                  <SelectItem value="Evento">Evento</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
+                  <SelectItem value="restaurante">Restaurante</SelectItem>
+                  <SelectItem value="hotel">Hotel</SelectItem>
+                  <SelectItem value="cafeteria">Cafetería</SelectItem>
+                  <SelectItem value="tienda">Tienda</SelectItem>
+                  <SelectItem value="oficina">Oficina</SelectItem>
+                  <SelectItem value="gimnasio">Gimnasio</SelectItem>
+                  <SelectItem value="evento">Evento</SelectItem>
+                  <SelectItem value="otro">Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="email" className="text-zinc-300">Email administrador</Label>
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-zinc-300">
+                Email administrador
+              </Label>
               <Input
                 id="email"
                 name="email"
@@ -151,78 +197,104 @@ export default function RegisterPage() {
                 type="email"
                 autoCapitalize="none"
                 autoComplete="email"
-                autoCorrect="off"
-                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4"
+                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4 focus:border-blue-500"
                 required
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="password" className="text-zinc-300">Contraseña</Label>
+            {/* Contraseña */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-zinc-300">
+                Contraseña
+              </Label>
               <Input
                 id="password"
                 name="password"
-                placeholder="••••••"
+                placeholder="•••••••"
                 type="password"
-                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4"
+                className="bg-zinc-900 border-zinc-800 text-white h-12 px-4 focus:border-blue-500"
                 required
+                minLength={8}
               />
             </div>
 
-            <div className="grid gap-2">
+            {/* Selección de Planes */}
+            <div className="space-y-3">
               <Label className="text-zinc-300">Elige tu plan</Label>
-              <RadioGroup defaultValue="starter" className="grid grid-cols-1 md:grid-cols-3 gap-4" name="plan">
-                <Label
-                  htmlFor="starter"
-                  className="flex flex-col items-center justify-between rounded-lg border p-4 text-white hover:bg-zinc-800 data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600"
-                >
-                  <RadioGroupItem id="starter" value="starter" className="sr-only" />
-                  <div className="text-lg font-bold">Starter</div>
-                  <div className={cn("text-3xl font-mono font-bold text-blue-400 my-2", GeistMono.className)}>$29</div>
-                  <div className="text-zinc-400 text-sm">/mes</div>
-                  <div className="text-zinc-500 text-xs mt-1 text-center">Perfecto para empezar</div>
-                </Label>
-                <Label
-                  htmlFor="business"
-                  className="flex flex-col items-center justify-between rounded-lg border p-4 text-white hover:bg-zinc-800 data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600"
-                >
-                  <RadioGroupItem id="business" value="business" className="sr-only" />
-                  <div className="text-lg font-bold">Business</div>
-                  <div className={cn("text-3xl font-mono font-bold text-blue-400 my-2", GeistMono.className)}>$79</div>
-                  <div className="text-zinc-400 text-sm">/mes</div>
-                  <div className="text-zinc-500 text-xs mt-1 text-center">Ideal para crecimiento</div>
-                </Label>
-                <Label
-                  htmlFor="enterprise"
-                  className="flex flex-col items-center justify-between rounded-lg border p-4 text-white hover:bg-zinc-800 data-[state=checked]:border-blue-600 [&:has([data-state=checked])]:border-blue-600"
-                >
-                  <RadioGroupItem id="enterprise" value="enterprise" className="sr-only" />
-                  <div className="text-lg font-bold">Enterprise</div>
-                  <div className={cn("text-3xl font-mono font-bold text-blue-400 my-2", GeistMono.className)}>$199</div>
-                  <div className="text-zinc-400 text-sm">/mes</div>
-                  <div className="text-zinc-500 text-xs mt-1 text-center">Para grandes empresas</div>
-                </Label>
+              <RadioGroup
+                value={selectedPlan}
+                onValueChange={setSelectedPlan}
+                className="grid grid-cols-1 md:grid-cols-3 gap-4"
+              >
+                {PLANS.map((plan) => (
+                  <Label
+                    key={plan.id}
+                    htmlFor={plan.id}
+                    className={cn(
+                      'flex flex-col items-center justify-between rounded-lg border p-4 cursor-pointer transition-all',
+                      'hover:bg-zinc-800/50',
+                      selectedPlan === plan.id
+                        ? 'border-blue-600 bg-blue-950/30'
+                        : 'border-zinc-700 bg-zinc-900/50',
+                      plan.recommended && 'relative'
+                    )}
+                  >
+                    {plan.recommended && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                        RECOMENDADO
+                      </span>
+                    )}
+                    <RadioGroupItem value={plan.id} id={plan.id} className="sr-only" />
+                    <div className="text-lg font-bold text-white">{plan.name}</div>
+                    <div className={cn('text-3xl font-bold text-blue-400 my-2', GeistMono.className)}>
+                      ${plan.price}
+                    </div>
+                    <div className="text-zinc-400 text-sm">/mes</div>
+                    <div className="text-zinc-500 text-xs mt-2 text-center">{plan.description}</div>
+                  </Label>
+                ))}
               </RadioGroup>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox id="terms" name="terms" required />
-              <Label htmlFor="terms" className="text-sm text-zinc-400 whitespace-normal">
-                Acepto los <Link href="#" className="underline text-blue-400">términos y condiciones</Link> y la <Link href="#" className="underline text-blue-400">política de privacidad</Link>
+            {/* Términos */}
+            <div className="flex items-start space-x-3">
+              <Checkbox id="terms" name="terms" required className="mt-1" />
+              <Label htmlFor="terms" className="text-sm text-zinc-400 font-normal leading-relaxed">
+                Acepto los{' '}
+                <Link href="/terminos" className="underline text-blue-400 hover:text-blue-300">
+                  términos y condiciones
+                </Link>{' '}
+                y la{' '}
+                <Link href="/privacidad" className="underline text-blue-400 hover:text-blue-300">
+                  política de privacidad
+                </Link>
               </Label>
             </div>
 
+            {/* Botón Submit */}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all duration-200 h-12"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold py-6 h-12 hover:from-blue-700 hover:to-blue-600 transition-all duration-200"
             >
-              Crear cuenta gratis
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Creando cuenta...
+                </span>
+              ) : (
+                'Crear cuenta gratis'
+              )}
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-zinc-500">
-            ¿Ya tienes cuenta?{" "}
-            <Link href="/login" className="underline text-blue-400">
+          {/* Login Link */}
+          <p className="text-center text-sm text-zinc-500">
+            ¿Ya tienes cuenta?{' '}
+            <Link href="/login" className="underline text-blue-400 hover:text-blue-300">
               Iniciar sesión
             </Link>
           </p>

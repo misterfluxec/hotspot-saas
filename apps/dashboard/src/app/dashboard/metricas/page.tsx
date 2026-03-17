@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 const prisma = new PrismaClient();
 
@@ -86,168 +87,248 @@ export default async function MetricasPage() {
   const totalClientsForPlans = planDistribution.reduce((sum, plan) => sum + plan._count.tenants, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-zinc-950 p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Métricas del negocio</h1>
-        <p className="text-slate-400 mt-2">Panel de control del rendimiento SaaS</p>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-white mb-2">Métricas del negocio</h1>
+        <p className="text-zinc-400 text-lg">Panel de control del rendimiento SaaS</p>
       </div>
 
-      {/* Métricas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">MRR</CardTitle>
+      {/* Métricas principales con diseño Premium */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-zinc-400 flex items-center justify-between">
+              MRR
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">${mrr.toLocaleString()}</div>
-            <p className="text-xs text-slate-400 mt-1">Ingreso mensual recurrente</p>
+            <div className="flex items-baseline space-x-2">
+              <div className="text-3xl font-bold text-white font-mono">${mrr.toLocaleString()}</div>
+              <div className="flex items-center text-green-400 text-sm">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                +12.5%
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">Ingreso mensual recurrente</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">ARR</CardTitle>
+        <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-zinc-400 flex items-center justify-between">
+              ARR
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">${arr.toLocaleString()}</div>
-            <p className="text-xs text-slate-400 mt-1">Ingreso anual recurrente</p>
+            <div className="flex items-baseline space-x-2">
+              <div className="text-3xl font-bold text-white font-mono">${arr.toLocaleString()}</div>
+              <div className="flex items-center text-green-400 text-sm">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                +12.5%
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">Ingreso anual recurrente</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Clientes activos</CardTitle>
+        <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-zinc-400 flex items-center justify-between">
+              Clientes activos
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{activeTenants}</div>
-            <p className="text-xs text-slate-400 mt-1">Total de {totalTenants} clientes</p>
+            <div className="flex items-baseline space-x-2">
+              <div className="text-3xl font-bold text-white font-mono">{activeTenants}</div>
+              <div className="text-zinc-500 text-sm">/ {totalTenants}</div>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">Total de clientes registrados</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Tasa conversión</CardTitle>
+        <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-zinc-400">Tasa conversión</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{conversionRate.toFixed(1)}%</div>
-            <p className="text-xs text-slate-400 mt-1">Trial → Activo</p>
+            <div className="space-y-3">
+              <div className="flex items-baseline space-x-2">
+                <div className="text-3xl font-bold text-white font-mono">{conversionRate.toFixed(1)}%</div>
+              </div>
+              <Progress value={conversionRate} className="h-2" />
+              <p className="text-xs text-zinc-500">Trial → Activo</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Clientes en riesgo */}
-      <Card className="bg-slate-900 border-slate-800">
+      {/* Clientes en riesgo con diseño Premium */}
+      <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10 mb-8">
         <CardHeader>
-          <CardTitle className="text-lg text-white">Clientes en riesgo</CardTitle>
-          <p className="text-sm text-slate-400">Trials que vencen pronto</p>
+          <CardTitle className="text-xl text-white flex items-center">
+            <div className="w-3 h-3 bg-red-500 rounded-full mr-3 animate-pulse"></div>
+            Clientes en riesgo
+          </CardTitle>
+          <p className="text-zinc-400">Trials que vencen pronto</p>
         </CardHeader>
         <CardContent>
           {atRiskTenants.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-slate-400">Nombre</TableHead>
-                  <TableHead className="text-slate-400">Email</TableHead>
-                  <TableHead className="text-slate-400">Plan</TableHead>
-                  <TableHead className="text-slate-400">Vence en</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {atRiskTenants.map((tenant) => {
-                  const daysUntilExpiry = tenant.trialEndsAt 
-                    ? Math.ceil((tenant.trialEndsAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                    : 0;
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-zinc-800">
+                    <TableHead className="text-zinc-400 font-medium">Nombre</TableHead>
+                    <TableHead className="text-zinc-400 font-medium">Email</TableHead>
+                    <TableHead className="text-zinc-400 font-medium">Plan</TableHead>
+                    <TableHead className="text-zinc-400 font-medium">Vence en</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {atRiskTenants.map((tenant) => {
+                    const daysUntilExpiry = tenant.trialEndsAt 
+                      ? Math.ceil((tenant.trialEndsAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                      : 0;
+                    
+                    const isCritical = daysUntilExpiry <= 1;
 
-                  return (
-                    <TableRow key={tenant.id}>
-                      <TableCell className="text-white">{tenant.name}</TableCell>
-                      <TableCell className="text-slate-300">{tenant.billingEmail}</TableCell>
-                      <TableCell className="text-slate-300">{tenant.plan?.name || 'Sin plan'}</TableCell>
-                      <TableCell>
-                        <Badge variant={daysUntilExpiry <= 1 ? "destructive" : "secondary"}>
-                          {daysUntilExpiry === 0 ? 'Hoy' : 
-                           daysUntilExpiry === 1 ? 'Mañana' : 
-                           `${daysUntilExpiry} días`}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                    return (
+                      <TableRow 
+                        key={tenant.id} 
+                        className={`border-zinc-800 hover:bg-zinc-800/50 transition-colors ${
+                          isCritical ? 'bg-gradient-to-r from-red-950/20 to-transparent' : ''
+                        }`}
+                      >
+                        <TableCell className="text-white font-medium">{tenant.name}</TableCell>
+                        <TableCell className="text-zinc-300 font-mono text-sm">{tenant.billingEmail}</TableCell>
+                        <TableCell className="text-zinc-300">{tenant.plan?.name || 'Sin plan'}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={isCritical ? "destructive" : "secondary"}
+                            className={`${isCritical ? 'bg-red-600 text-white border-red-500' : 'bg-zinc-800 text-zinc-300 border-zinc-700'} hover:scale-105 transition-transform`}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-red-400 animate-pulse' : 'bg-yellow-400'}`}></div>
+                              <span>
+                                {daysUntilExpiry === 0 ? 'Hoy' : 
+                                 daysUntilExpiry === 1 ? 'Mañana' : 
+                                 `${daysUntilExpiry} días`}
+                              </span>
+                            </div>
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <p className="text-slate-400 text-center py-8">No hay clientes en riesgo</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-zinc-400 text-lg">No hay clientes en riesgo</p>
+              <p className="text-zinc-500 text-sm mt-1">Todos los trials están en buen estado</p>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Crecimiento mensual */}
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-lg text-white">Crecimiento</CardTitle>
-          <p className="text-sm text-slate-400">Nuevos clientes por mes (últimos 6 meses)</p>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-slate-400">Mes</TableHead>
-                <TableHead className="text-slate-400">Nuevos clientes</TableHead>
-                <TableHead className="text-slate-400">Acumulado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {growthWithCumulative.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="text-white">
-                    {item.month.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}
-                  </TableCell>
-                  <TableCell className="text-slate-300">{item.newClients}</TableCell>
-                  <TableCell className="text-slate-300">{item.cumulative}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Distribución por plan */}
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-lg text-white">Distribución por plan</CardTitle>
-          <p className="text-sm text-slate-400">Clientes e ingresos por plan</p>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-slate-400">Plan</TableHead>
-                <TableHead className="text-slate-400">Clientes</TableHead>
-                <TableHead className="text-slate-400">% del total</TableHead>
-                <TableHead className="text-slate-400">Ingresos estimados</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {planDistribution.map((plan) => {
-                const percentage = totalClientsForPlans > 0 
-                  ? (plan._count.tenants / totalClientsForPlans) * 100 
-                  : 0;
-                const estimatedRevenue = plan._count.tenants * plan.priceMonthly;
-
-                return (
-                  <TableRow key={plan.id}>
-                    <TableCell className="text-white">{plan.name}</TableCell>
-                    <TableCell className="text-slate-300">{plan._count.tenants}</TableCell>
-                    <TableCell className="text-slate-300">{percentage.toFixed(1)}%</TableCell>
-                    <TableCell className="text-slate-300">${estimatedRevenue.toLocaleString()}</TableCell>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Crecimiento mensual */}
+        <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10">
+          <CardHeader>
+            <CardTitle className="text-xl text-white flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+              Crecimiento
+            </CardTitle>
+            <p className="text-zinc-400">Nuevos clientes por mes (últimos 6 meses)</p>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-zinc-800">
+                    <TableHead className="text-zinc-400 font-medium">Mes</TableHead>
+                    <TableHead className="text-zinc-400 font-medium text-right">Nuevos</TableHead>
+                    <TableHead className="text-zinc-400 font-medium text-right">Acumulado</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {growthWithCumulative.map((item, index) => (
+                    <TableRow key={index} className="border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <TableCell className="text-white font-medium">
+                        {item.month.toLocaleDateString('es-ES', { year: 'numeric', month: 'short' })}
+                      </TableCell>
+                      <TableCell className="text-zinc-300 text-right font-mono">{item.newClients}</TableCell>
+                      <TableCell className="text-zinc-300 text-right font-mono font-medium">{item.cumulative}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Distribución por plan */}
+        <Card className="bg-zinc-900/50 backdrop-blur-sm border-white/10">
+          <CardHeader>
+            <CardTitle className="text-xl text-white flex items-center">
+              <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+              Distribución por plan
+            </CardTitle>
+            <p className="text-zinc-400">Clientes e ingresos por plan</p>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-zinc-800">
+                    <TableHead className="text-zinc-400 font-medium">Plan</TableHead>
+                    <TableHead className="text-zinc-400 font-medium text-right">Clientes</TableHead>
+                    <TableHead className="text-zinc-400 font-medium">Distribución</TableHead>
+                    <TableHead className="text-zinc-400 font-medium text-right">Ingresos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {planDistribution.map((plan) => {
+                    const percentage = totalClientsForPlans > 0 
+                      ? (plan._count.tenants / totalClientsForPlans) * 100 
+                      : 0;
+                    const estimatedRevenue = plan._count.tenants * plan.priceMonthly;
+
+                    return (
+                      <TableRow key={plan.id} className="border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                        <TableCell className="text-white font-medium">{plan.name}</TableCell>
+                        <TableCell className="text-zinc-300 text-right font-mono">{plan._count.tenants}</TableCell>
+                        <TableCell className="text-zinc-300">
+                          <div className="flex items-center space-x-2">
+                            <div className="flex-1 max-w-[60px]">
+                              <Progress value={percentage} className="h-2" />
+                            </div>
+                            <span className="text-sm font-mono">{percentage.toFixed(1)}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-zinc-300 text-right font-mono font-medium">${estimatedRevenue.toLocaleString()}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

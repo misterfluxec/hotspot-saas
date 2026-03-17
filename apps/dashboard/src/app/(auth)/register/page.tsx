@@ -95,44 +95,42 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-black">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden bg-black">
       
       {/* Panel Izquierdo - Branding (50%) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 items-center justify-center">
-        <div className="max-w-lg w-full text-center space-y-8">
-          {/* Logo */}
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Wifi className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Sans' }}>
-              HotSpot SaaS
-            </span>
+      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 flex-col justify-center items-center text-center text-white">
+        {/* Logo */}
+        <div className="flex items-center justify-center space-x-3 mb-8">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+            <Wifi className="w-6 h-6 text-white" />
           </div>
-          
-          {/* Mensaje Potente */}
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-white leading-tight" style={{ fontFamily: 'Geist Sans' }}>
-              Transforma tu WiFi en una herramienta de marketing
-            </h1>
-            <p className="text-xl text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-              Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real
-            </p>
+          <span className="text-3xl font-bold" style={{ fontFamily: 'Geist Sans' }}>
+            HotSpot SaaS
+          </span>
+        </div>
+        
+        {/* Mensaje Potente */}
+        <div className="max-w-lg space-y-6">
+          <h1 className="text-4xl font-bold leading-tight" style={{ fontFamily: 'Geist Sans' }}>
+            Transforma tu WiFi en una herramienta de marketing
+          </h1>
+          <p className="text-lg text-zinc-300" style={{ fontFamily: 'Geist Sans' }}>
+            Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real
+          </p>
+        </div>
+        
+        {/* Stat Social Proof */}
+        <div className="mt-12 pt-8 border-t border-zinc-800">
+          <div className="text-3xl font-bold" style={{ fontFamily: 'Geist Mono' }}>
+            500+
           </div>
-          
-          {/* Stat */}
-          <div className="pt-8 border-t border-zinc-800">
-            <div className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Mono' }}>
-              500+
-            </div>
-            <div className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-              negocios confían en nosotros
-            </div>
+          <div className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
+            negocios confían en nosotros
           </div>
         </div>
       </div>
 
-      {/* Panel Derecho - Registro (50%) */}
+      {/* Panel Derecho - Formulario de Registro (50%) */}
       <div className="w-full lg:w-1/2 bg-black overflow-y-auto">
         <div className="max-w-md mx-auto py-12 px-6 space-y-8">
           
@@ -210,7 +208,7 @@ export default function RegisterPage() {
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="mt-2 h-12 bg-zinc-900 border-zinc-800 text-white focus:border-blue-500 px-4 pr-12"
-                    placeholder="•••••••"
+                    placeholder="••••••"
                     style={{ fontFamily: 'Geist Sans' }}
                     required
                   />
@@ -235,10 +233,10 @@ export default function RegisterPage() {
                   <div
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan.id)}
-                    className={`cursor-pointer transition-all duration-200 border rounded-lg p-4 text-center ${
+                    className={`cursor-pointer transition-all duration-200 border border-zinc-700 rounded-lg p-4 text-center ${
                       selectedPlan === plan.id
                         ? 'border-blue-600 bg-blue-950'
-                        : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+                        : 'bg-zinc-900 hover:border-zinc-600'
                     }`}
                   >
                     <div className="font-medium text-white mb-2" style={{ fontFamily: 'Geist Sans' }}>
@@ -277,7 +275,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading || !formData.businessName || !formData.businessType || !formData.email || !formData.acceptTerms}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium transition-all duration-200"
               style={{ fontFamily: 'Geist Sans' }}
             >
               {isLoading ? (

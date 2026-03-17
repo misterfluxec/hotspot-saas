@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Check, Wifi, Users, Zap, Shield, Sparkles, ArrowRight } from 'lucide-react';
+import { Check, Wifi, ArrowRight } from 'lucide-react';
 
 interface Plan {
   id: string;
@@ -120,47 +120,32 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Left Side - Visual Section */}
-          <div className="hidden lg:flex flex-col items-center justify-center text-center space-y-8">
+    <div className="min-h-screen bg-zinc-950 flex">
+      <div className="flex flex-col lg:flex-row w-full">
+        
+        {/* Left Column - Visual Section */}
+        <div className="hidden lg:flex lg:w-1/2 bg-zinc-900 items-center justify-center p-12">
+          <div className="max-w-md w-full text-center space-y-8">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
                 <Wifi className="w-6 h-6 text-white" />
               </div>
               <span className="text-3xl font-bold text-white">HotSpot</span>
             </div>
             
-            {/* Hero Image/Illustration */}
-            <div className="relative">
-              <div className="w-96 h-96 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-3xl border border-white/10 backdrop-blur-sm flex items-center justify-center">
-                <div className="text-center space-y-6 p-8">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-                    <Zap className="w-10 h-10 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white">
-                    Transforma tu WiFi en crecimiento
-                  </h2>
-                  <p className="text-zinc-400 max-w-sm">
-                    Convierte tu conexión WiFi en una poderosa herramienta de marketing y fidelización de clientes
-                  </p>
-                </div>
-              </div>
-              
-              {/* Floating elements */}
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-2xl border border-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Users className="w-8 h-8 text-green-400" />
-              </div>
-              <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl border border-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Shield className="w-8 h-8 text-purple-400" />
-              </div>
+            {/* Hero Text */}
+            <div className="space-y-4">
+              <h1 className="text-4xl font-bold text-white">
+                Transforma tu WiFi en crecimiento
+              </h1>
+              <p className="text-lg text-zinc-400">
+                Convierte tu conexión WiFi en una poderosa herramienta de marketing y fidelización de clientes
+              </p>
             </div>
             
-            {/* Trust indicators */}
-            <div className="flex items-center space-x-8 text-zinc-400 text-sm">
+            {/* Trust Indicators */}
+            <div className="flex items-center justify-center space-x-6 text-sm text-zinc-400">
               <div className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-400" />
                 <span>SSL Seguro</span>
@@ -175,57 +160,56 @@ export default function RegisterPage() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Right Side - Form Section */}
-          <div className="space-y-8">
+        {/* Right Column - Form Section */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+          <div className="w-full max-w-md space-y-8">
+            
             {/* Plans Selection */}
             <div>
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <Sparkles className="w-5 h-5 mr-2 text-yellow-400" />
-                Elige tu Plan
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h2 className="text-2xl font-bold text-white mb-6">Elige tu Plan</h2>
+              <div className="space-y-3">
                 {plans.map((plan) => (
                   <Card
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan.id)}
-                    className={`cursor-pointer transition-all duration-300 relative ${
+                    className={`cursor-pointer transition-all duration-200 ${
                       selectedPlan === plan.id
-                        ? 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-500/50 shadow-lg shadow-blue-500/20 scale-105'
-                        : 'bg-zinc-900/50 border-white/5 hover:border-white/10 hover:bg-zinc-900/70'
+                        ? 'bg-blue-600 border-blue-500'
+                        : 'bg-zinc-900 border-zinc-700 hover:border-zinc-600'
                     }`}
                   >
                     <CardContent className="p-4">
                       {plan.recommended && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 px-3 py-1 text-xs font-bold shadow-lg">
-                            MÁS POPULAR
+                        <div className="mb-3">
+                          <Badge className="bg-green-600 text-white">
+                            RECOMENDADO
                           </Badge>
                         </div>
                       )}
                       
-                      <div className="text-center space-y-3">
-                        <h3 className={`font-bold text-lg ${selectedPlan === plan.id ? 'text-white' : 'text-zinc-300'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-bold text-white">
                           {plan.name}
                         </h3>
-                        
-                        <div className="space-y-1">
-                          <div className={`text-3xl font-bold ${selectedPlan === plan.id ? 'text-white' : 'text-zinc-300'}`}>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white">
                             ${plan.price}
                           </div>
-                          <div className="text-sm text-zinc-500">/mes</div>
+                          <div className="text-sm text-zinc-400">/mes</div>
                         </div>
-                        
-                        <div className="space-y-2 text-left">
-                          {plan.features.slice(0, 3).map((feature, index) => (
-                            <div key={index} className="flex items-center space-x-2">
-                              <Check className={`w-3 h-3 flex-shrink-0 ${selectedPlan === plan.id ? 'text-blue-400' : 'text-zinc-500'}`} />
-                              <span className={`text-xs ${selectedPlan === plan.id ? 'text-zinc-200' : 'text-zinc-400'}`}>
-                                {feature}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {plan.features.slice(0, 3).map((feature, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            <span className="text-sm text-zinc-300">
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -234,11 +218,11 @@ export default function RegisterPage() {
             </div>
 
             {/* Registration Form */}
-            <Card className="bg-zinc-900/50 border-white/5 backdrop-blur-sm">
-              <CardContent className="p-8">
+            <Card className="bg-zinc-900 border-zinc-700">
+              <CardContent className="p-6">
                 <h3 className="text-xl font-bold text-white mb-6">Datos del Negocio</h3>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <div>
                       <Label htmlFor="businessName" className="text-zinc-300 text-sm font-medium">
                         Nombre del Negocio
@@ -248,7 +232,7 @@ export default function RegisterPage() {
                         type="text"
                         value={formData.businessName}
                         onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                        className="mt-2 bg-zinc-900/70 border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="mt-2 bg-zinc-800 border-zinc-600 text-white focus:border-blue-500"
                         placeholder="Mi Restaurante S.A."
                         required
                       />
@@ -259,81 +243,81 @@ export default function RegisterPage() {
                         Tipo de Negocio
                       </Label>
                       <Select value={formData.businessType} onValueChange={(value) => setFormData(prev => ({ ...prev, businessType: value }))}>
-                        <SelectTrigger className="mt-2 bg-zinc-900/70 border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all">
+                        <SelectTrigger className="mt-2 bg-zinc-800 border-zinc-600 text-white focus:border-blue-500">
                           <SelectValue placeholder="Selecciona tu tipo" />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900/95 border-white/10 backdrop-blur-sm">
+                        <SelectContent className="bg-zinc-800 border-zinc-600">
                           {businessTypes.map((type) => (
-                            <SelectItem key={type} value={type} className="text-white hover:bg-zinc-800">
+                            <SelectItem key={type} value={type} className="text-white hover:bg-zinc-700">
                               {type}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="email" className="text-zinc-300 text-sm font-medium">
-                      Email Administrador
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="mt-2 bg-zinc-900/70 border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                      placeholder="admin@negocio.com"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="password" className="text-zinc-300 text-sm font-medium">
-                        Contraseña
+                      <Label htmlFor="email" className="text-zinc-300 text-sm font-medium">
+                        Email Administrador
                       </Label>
                       <Input
-                        id="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                        className="mt-2 bg-zinc-900/70 border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                        placeholder="••••••"
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className="mt-2 bg-zinc-800 border-zinc-600 text-white focus:border-blue-500"
+                        placeholder="admin@negocio.com"
                         required
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="confirmPassword" className="text-zinc-300 text-sm font-medium">
-                        Confirmar Contraseña
-                      </Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className="mt-2 bg-zinc-900/70 border-white/10 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                        placeholder="••••••"
-                        required
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="password" className="text-zinc-300 text-sm font-medium">
+                          Contraseña
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                          className="mt-2 bg-zinc-800 border-zinc-600 text-white focus:border-blue-500"
+                          placeholder="•••••••"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="confirmPassword" className="text-zinc-300 text-sm font-medium">
+                          Confirmar Contraseña
+                        </Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          className="mt-2 bg-zinc-800 border-zinc-600 text-white focus:border-blue-500"
+                          placeholder="•••••••"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <Button
                     type="submit"
                     disabled={isLoading || !formData.businessName || !formData.businessType || !formData.email}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 flex items-center justify-center space-x-2"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 transition-colors duration-200 flex items-center justify-center space-x-2"
                   >
                     {isLoading ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-transparent rounded-full animate-spin"></div>
                         <span>Creando cuenta...</span>
                       </>
                     ) : (
                       <>
                         <span>Crear Cuenta</span>
-                        <ArrowRight className="w-5 h-5" />
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </Button>

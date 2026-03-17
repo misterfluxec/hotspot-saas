@@ -232,6 +232,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normalizar planId a minúsculas
+    const normalizedPlanId = planId.toLowerCase().trim();
+
     // Verificar si el email ya existe
     const existingUser = await prisma.user.findFirst({
       where: { 
@@ -251,12 +254,12 @@ export async function POST(request: NextRequest) {
 
     // Obtener el plan seleccionado
     const plan = await prisma.plan.findUnique({
-      where: { id: planId }
+      where: { id: normalizedPlanId }
     });
 
     if (!plan) {
       return NextResponse.json(
-        { message: 'Plan no encontrado' },
+        { message: `Plan no encontrado: ${normalizedPlanId}` },
         { status: 400 }
       );
     }

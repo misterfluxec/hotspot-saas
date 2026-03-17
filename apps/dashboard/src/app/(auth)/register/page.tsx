@@ -2,59 +2,30 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Check, Wifi, Users, TrendingUp, Shield, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Wifi, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  features: string[];
-  recommended?: boolean;
-}
-
-const plans: Plan[] = [
+const plans = [
   {
     id: 'starter',
     name: 'Starter',
     price: 29,
-    features: [
-      'Hasta 50 usuarios concurrentes',
-      '1 sucursal',
-      'Portal WiFi básico',
-      'Soporte por email'
-    ]
+    description: 'Perfecto para empezar'
   },
   {
     id: 'business',
     name: 'Business',
     price: 79,
-    features: [
-      'Hasta 200 usuarios concurrentes',
-      'Hasta 5 sucursales',
-      'Portal WiFi personalizado',
-      'Analytics avanzado',
-      'Soporte prioritario'
-    ],
-    recommended: true
+    description: 'Ideal para crecimiento'
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
     price: 199,
-    features: [
-      'Usuarios ilimitados',
-      'Sucursales ilimitadas',
-      'Portal WiFi premium',
-      'API completa',
-      'Soporte 24/7',
-      'White label'
-    ]
+    description: 'Para grandes empresas'
   }
 ];
 
@@ -71,7 +42,7 @@ const businessTypes = [
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<string>('business');
+  const [selectedPlan, setSelectedPlan] = useState('business');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -93,6 +64,9 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
+      // Debug: Verificar qué plan ID se está enviando
+      console.log('Enviando planId:', selectedPlan);
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -103,7 +77,7 @@ export default function RegisterPage() {
           businessType: formData.businessType,
           email: formData.email,
           password: formData.password,
-          planId: selectedPlan.toLowerCase() // Normalizar a minúsculas
+          planId: selectedPlan // Enviar exactamente el ID del plan
         }),
       });
 
@@ -121,84 +95,60 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden bg-black">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-black">
       
-      {/* Panel Izquierdo - Visual (40%) */}
-      <div className="hidden lg:flex lg:w-[40%] bg-zinc-900 p-12 flex-col justify-between">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="max-w-md w-full space-y-8">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Wifi className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Sans' }}>HotSpot SaaS</span>
+      {/* Panel Izquierdo - Branding (50%) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-zinc-950 p-20 items-center justify-center">
+        <div className="max-w-lg w-full text-center space-y-8">
+          {/* Logo */}
+          <div className="flex items-center justify-center space-x-3">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+              <Wifi className="w-6 h-6 text-white" />
             </div>
-            
-            {/* Hero Content */}
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-4xl font-bold text-white leading-tight mb-6" style={{ fontFamily: 'Geist Sans' }}>
-                  Transforma tu WiFi en una herramienta de marketing
-                </h1>
-                
-                {/* Benefits */}
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Users className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <div className="text-white font-semibold" style={{ fontFamily: 'Geist Sans' }}>Captura datos de tus clientes</div>
-                      <div className="text-zinc-400 text-sm">Información valiosa para tu negocio</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <div className="text-white font-semibold" style={{ fontFamily: 'Geist Sans' }}>Incrementa tus ventas</div>
-                      <div className="text-zinc-400 text-sm">Fideliza y convierte mejor</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <div className="text-white font-semibold" style={{ fontFamily: 'Geist Sans' }}>Analytics en tiempo real</div>
-                      <div className="text-zinc-400 text-sm">Toma decisiones informadas</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Stat */}
-              <div className="pt-8 border-t border-zinc-800">
-                <div className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Mono' }}>500+</div>
-                <div className="text-blue-400" style={{ fontFamily: 'Geist Sans' }}>negocios confían en nosotros</div>
-              </div>
+            <span className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Sans' }}>
+              HotSpot SaaS
+            </span>
+          </div>
+          
+          {/* Mensaje Potente */}
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold text-white leading-tight" style={{ fontFamily: 'Geist Sans' }}>
+              Transforma tu WiFi en una herramienta de marketing
+            </h1>
+            <p className="text-xl text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
+              Captura datos, incrementa ventas y fideliza clientes con analytics en tiempo real
+            </p>
+          </div>
+          
+          {/* Stat */}
+          <div className="pt-8 border-t border-zinc-800">
+            <div className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Mono' }}>
+              500+
+            </div>
+            <div className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
+              negocios confían en nosotros
             </div>
           </div>
         </div>
       </div>
 
-      {/* Panel Derecho - Formulario (60%) */}
-      <div className="w-full lg:w-[60%] h-full overflow-y-auto bg-black p-6 lg:p-20">
-        <div className="max-w-xl mx-auto w-full space-y-8">
+      {/* Panel Derecho - Registro (50%) */}
+      <div className="w-full lg:w-1/2 bg-black overflow-y-auto">
+        <div className="max-w-md mx-auto py-12 px-6 space-y-8">
           
           {/* Header */}
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Sans' }}>Crear cuenta gratis</h2>
-            <p className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>14 días sin tarjeta</p>
+            <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'Geist Sans' }}>
+              Crear cuenta gratis
+            </h2>
+            <p className="text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
+              14 días sin tarjeta
+            </p>
           </div>
 
           {/* Registration Form */}
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="businessName" className="text-zinc-300 text-sm font-medium" style={{ fontFamily: 'Geist Sans' }}>
                   Nombre del negocio
@@ -275,41 +225,35 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Plans Selection - Grid Inteligente */}
+            {/* Plan Selection - Grid de 3 Columnas */}
             <div>
               <Label className="text-zinc-300 text-sm font-medium mb-4 block" style={{ fontFamily: 'Geist Sans' }}>
                 Elige tu plan
               </Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {plans.map((plan) => (
-                  <Card
+                  <div
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan.id)}
-                    className={`cursor-pointer transition-all duration-200 ${
+                    className={`cursor-pointer transition-all duration-200 border rounded-lg p-4 text-center ${
                       selectedPlan === plan.id
-                        ? 'border-blue-500 bg-blue-950'
+                        ? 'border-blue-600 bg-blue-950'
                         : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
                     }`}
                   >
-                    <CardContent className="p-4 text-center">
-                      {plan.recommended && (
-                        <div className="mb-3">
-                          <Badge className="bg-green-600 text-white text-xs" style={{ fontFamily: 'Geist Sans' }}>
-                            Recomendado
-                          </Badge>
-                        </div>
-                      )}
-                      <div className="text-lg font-bold text-white mb-2" style={{ fontFamily: 'Geist Sans' }}>
-                        {plan.name}
-                      </div>
-                      <div className="text-2xl font-bold text-blue-400 mb-1" style={{ fontFamily: 'Geist Mono' }}>
-                        ${plan.price}
-                      </div>
-                      <div className="text-xs text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
-                        /mes
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <div className="font-medium text-white mb-2" style={{ fontFamily: 'Geist Sans' }}>
+                      {plan.name}
+                    </div>
+                    <div className="text-2xl font-bold text-blue-400" style={{ fontFamily: 'Geist Mono' }}>
+                      ${plan.price}
+                    </div>
+                    <div className="text-xs text-zinc-400" style={{ fontFamily: 'Geist Sans' }}>
+                      /mes
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-2" style={{ fontFamily: 'Geist Sans' }}>
+                      {plan.description}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -333,18 +277,18 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading || !formData.businessName || !formData.businessType || !formData.email || !formData.acceptTerms}
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium transition-all duration-200 flex items-center justify-center space-x-2"
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
               style={{ fontFamily: 'Geist Sans' }}
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Creando cuenta...</span>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Creando cuenta...
                 </>
               ) : (
                 <>
-                  <span>Crear cuenta gratis</span>
-                  <ArrowRight className="w-4 h-4" />
+                  Crear cuenta gratis
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
             </Button>

@@ -1,5 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Wifi, WifiOff, MapPin, Settings, Trash2, CheckCircle, XCircle } from 'lucide-react';
+
+interface Branch {
+  id: string;
+  name: string;
+  address: string;
+}
 
 const prisma = new PrismaClient();
 
@@ -150,7 +158,7 @@ export default async function ClienteDetallePage({
             </div>
             {cliente.subscriptions && cliente.subscriptions.length > 0 ? (
               <div className="space-y-3">
-                {cliente.subscriptions.map((subscription) => (
+                {cliente.subscriptions.map((subscription: any) => (
                   <div key={subscription.id} className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Plan:</span>
@@ -188,7 +196,7 @@ export default async function ClienteDetallePage({
               Sucursales ({cliente.branches.length})
             </h2>
             <div className="space-y-3">
-              {cliente.branches.map((sucursal) => (
+              {cliente.branches.map((sucursal: Branch) => (
                 <div key={sucursal.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
                   <div>
                     <p className="font-medium text-white">{sucursal.name}</p>
@@ -210,7 +218,7 @@ export default async function ClienteDetallePage({
               Portales Activos ({cliente.portals.length})
             </h2>
             <div className="space-y-3">
-              {cliente.portals.map((portal) => (
+              {cliente.portals.map((portal: any) => (
                 <div key={portal.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
                   <div>
                     <p className="font-medium text-white">{portal.name}</p>
@@ -236,7 +244,7 @@ export default async function ClienteDetallePage({
               Historial de Pagos
             </h2>
             <div className="space-y-3">
-              {pagos.map((pago) => (
+              {pagos.map((pago: any) => (
                 <div key={pago.id} className="p-3 bg-slate-800 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
                     <div>

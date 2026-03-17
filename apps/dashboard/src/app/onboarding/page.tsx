@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Wifi, Palette, CheckCircle, Sparkles, MapPin, Settings } from 'lucide-react';
+import { LogoUpload } from '@/components/logo-upload';
 
 interface OnboardingData {
-  logo?: File;
+  logoUrl?: string | undefined;
   address: string;
   branchName: string;
   routerType: string;
@@ -121,24 +122,10 @@ export default function OnboardingPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <Label htmlFor="logo" className="text-zinc-300">
-                  Logo del Negocio
-                </Label>
-                <div className="mt-2 flex items-center space-x-4">
-                  <div className="w-24 h-24 bg-zinc-800 rounded-lg flex items-center justify-center border-2 border-dashed border-zinc-600">
-                    <Upload className="w-8 h-8 text-zinc-400" />
-                  </div>
-                  <div>
-                    <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                      Subir Logo
-                    </Button>
-                    <p className="text-sm text-zinc-400 mt-2">
-                      PNG o JPG, máximo 2MB
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <LogoUpload 
+                currentLogo={onboardingData.logoUrl}
+                onLogoChange={(logoUrl) => setOnboardingData(prev => ({ ...prev, logoUrl }))}
+              />
 
               <div>
                 <Label htmlFor="address" className="text-zinc-300">

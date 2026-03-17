@@ -186,7 +186,7 @@ export default async function ClientesPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {clientes.map((cliente) => (
+              {clientes.map((cliente: any) => (
                 <tr key={cliente.id} className="hover:bg-slate-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-white">
@@ -200,7 +200,7 @@ export default async function ClientesPage({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-300">
-                      {cliente.subscriptions?.map((subscription) => (
+                      {cliente.subscriptions?.map((subscription: any) => (
                         <div key={subscription.id}>{subscription.plan.name}</div>
                       )) || 'Sin plan'}
                     </div>

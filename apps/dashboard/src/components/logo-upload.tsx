@@ -7,12 +7,12 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 
 interface LogoUploadProps {
   currentLogo?: string;
-  onLogoChange: (logoUrl: string | null) => void;
+  onLogoChange: (logoUrl: string | undefined) => void;
 }
 
 export function LogoUpload({ currentLogo, onLogoChange }: LogoUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(currentLogo || null);
+  const [preview, setPreview] = useState<string | undefined>(currentLogo);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,15 +51,15 @@ export function LogoUpload({ currentLogo, onLogoChange }: LogoUploadProps) {
     } catch (error) {
       console.error('Error uploading logo:', error);
       alert('Error al subir el logo. Por favor intenta nuevamente.');
-      setPreview(currentLogo || null);
+      setPreview(currentLogo || undefined);
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleRemove = () => {
-    setPreview(null);
-    onLogoChange(null);
+    setPreview(undefined);
+    onLogoChange(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }

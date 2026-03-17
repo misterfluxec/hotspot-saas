@@ -33,24 +33,49 @@ model Tenant {
   visitors     Visitor[]
   campaigns    Campaign[]
   subscriptions Subscription[]
+  auditLogs    AuditLog[]
 
   @@map("tenants")
 }
 
+// Tabla de auditoría del sistema
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  
+  // Relaciones inversas
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
 // Tabla de usuarios por tenant
 model User {
-  id           String    @id @default(cuid())
-  tenantId     String    @map("tenant_id")
-  email        String
-  passwordHash String    @map("password_hash")
-  role         String    @default("user") // admin, user, readonly
-  name         String
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id               String    @id @default(cuid())
+  tenantId         String    @map("tenant_id")
+  email            String
+  passwordHash     String    @map("password_hash")
+  role             String    @default("user") // admin, user, readonly
+  name             String
+  lastLoginAt      DateTime? @map("last_login_at")
+  twoFactorEnabled Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorSecret String?   @map("two_factor_secret")
+  backupCodes     Json?     @map("backup_codes")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // Relaciones
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  auditLogs AuditLog[]
 
   @@unique([tenantId, email])
   @@map("users")
@@ -95,10 +120,10 @@ model Branch {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   // Relaciones
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  portal    Portal?  @relation(fields: [portalId], references: [id])
-  visitors  Visitor[]
-  campaigns Campaign[]
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  portals      Portal[]
+  visitors     Visitor[]
+  campaigns    Campaign[]
 
   @@map("branches")
 }

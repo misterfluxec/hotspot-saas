@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(
           {
-            message: `Plan no encontrado: "${normalizedPlanId}". Planes disponibles: ${availablePlans.map(p => p.name).join(', ')}`,
+            message: `Plan no encontrado: "${normalizedPlanId}". Planes disponibles: ${availablePlans.map((p: any) => p.name).join(', ')}`,
             availablePlans,
           },
           { status: 400 }
@@ -84,7 +84,7 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
   const slug = data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
   // Crear tenant + user + suscripción en transacción atómica
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: any) => {
     // 1. Crear tenant
     const tenant = await tx.tenant.create({
       data: {

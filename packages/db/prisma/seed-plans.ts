@@ -12,7 +12,7 @@ export async function seedPlans() {
   const plansData = [
     {
       id: 'starter', // ← ID FIJO - CRÍTICO
-      name: 'Plan Básico',
+      name: 'Starter', // ← NOMBRE EXACTO AL FRONTEND
       priceMonthly: 29.99,
       maxPortals: 1,
       maxBranches: 1,
@@ -29,7 +29,7 @@ export async function seedPlans() {
     },
     {
       id: 'business', // ← ID FIJO - CRÍTICO
-      name: 'Plan Profesional',
+      name: 'Business', // ← NOMBRE EXACTO AL FRONTEND
       priceMonthly: 79.99,
       maxPortals: 3,
       maxBranches: 5,
@@ -47,7 +47,7 @@ export async function seedPlans() {
     },
     {
       id: 'enterprise', // ← ID FIJO - CRÍTICO
-      name: 'Plan Enterprise',
+      name: 'Enterprise', // ← NOMBRE EXACTO AL FRONTEND
       priceMonthly: 199.99,
       maxPortals: -1, // -1 = ilimitado
       maxBranches: -1,

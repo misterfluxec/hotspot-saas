@@ -11,29 +11,55 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    console.log('🔐 Intentando login:', { email });
 
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // CRÍTICO: Para cookies httpOnly
       });
 
-      if (response.ok) {
-        // Login exitoso, redirigir al dashboard
-        router.push('/dashboard');
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Error al iniciar sesión');
+      const result = await response.json();
+      console.log('📡 Respuesta del servidor:', { status: response.status, result });
+
+      if (!response.ok) {
+        // Mostrar error específico del backend
+        throw new Error(result.message || `Error ${response.status}: ${result.error}`);
       }
+
+      console.log('✅ Login exitoso, redirigiendo...');
+
+      // Pequeño delay para asegurar que la cookie se establezca
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      router.push(result.redirect || '/dashboard');
+      router.refresh(); // Forzar refresh de datos
+
     } catch (err) {
-      setError('Error de conexión. Inténtalo de nuevo.');
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión con el servidor';
+      console.error('❌ Error en login:', err);
+      setError(errorMessage);
+
+      // Feedback visual adicional
+      if (errorMessage.includes('credenciales') || errorMessage.includes('inválidas')) {
+        // Resaltar campos de email/password
+        const inputs = e.currentTarget.querySelectorAll('input');
+        inputs.forEach(input => {
+          input.classList.add('ring-2', 'ring-red-500/50');
+          setTimeout(() => input.classList.remove('ring-2', 'ring-red-500/50'), 2000);
+        });
+      }
     } finally {
       setIsLoading(false);
     }

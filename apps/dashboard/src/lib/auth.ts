@@ -4,9 +4,20 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret'
-)
+// ASEGURAR que JWT_SECRET esté cargado
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('❌ JWT_SECRET no está configurado en variables de entorno');
+  // En desarrollo, usar fallback con warning
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️ Usando JWT_SECRET de desarrollo - NO USAR EN PRODUCCIÓN');
+  }
+}
+
+const secretKey = new TextEncoder().encode(
+  JWT_SECRET || 'dev-fallback-secret-change-in-production'
+);
 
 export interface LoginCredentials {
   email: string;
@@ -129,28 +140,44 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResu
 }
 
 export async function generateJWT(payload: {
-  userId: string
-  tenantId: string // ← CRÍTICO: Siempre string, nunca null
-  role: string
-  email: string
+  userId: string;
+  tenantId: string; // ← CRÍTICO: Siempre string, nunca null
+  role: string;
+  email: string;
 }) {
-  return await new SignJWT(payload)
+  console.log('🔑 Generando JWT con payload:', { 
+    userId: payload.userId, 
+    tenantId: payload.tenantId,
+    role: payload.role 
+  });
+  
+  const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(JWT_SECRET)
+    .sign(secretKey);
+    
+  console.log('✅ JWT generado exitosamente');
+  return token;
 }
 
 export async function verifyJWT(token: string) {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    console.log('🔍 Verificando JWT token');
+    const { payload } = await jwtVerify(token, secretKey)
+    console.log('✅ JWT verificado exitosamente:', { 
+      userId: payload.userId, 
+      tenantId: payload.tenantId,
+      role: payload.role 
+    });
     return payload as {
       userId: string
       tenantId: string // ← CRÍTICO: Siempre string, nunca null
       role: string
       email: string
     }
-  } catch {
+  } catch (error) {
+    console.error('❌ Error verificando JWT:', error.message);
     return null
   }
 }

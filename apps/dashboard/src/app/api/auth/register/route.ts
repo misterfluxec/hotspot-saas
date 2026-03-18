@@ -51,8 +51,10 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(
           {
+            success: false,
             message: `Plan no encontrado: "${normalizedPlanId}". Planes disponibles: ${availablePlans.map((p: any) => p.name).join(', ')}`,
             availablePlans,
+            timestamp: new Date().toISOString()
           },
           { status: 400 }
         );
@@ -67,13 +69,25 @@ export async function POST(request: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Datos inválidos', errors: error.issues },
+        { 
+          success: false,
+          message: 'Datos inválidos', 
+          errors: error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
         { status: 400 }
       );
     }
 
+    // Error general
     return NextResponse.json(
-      { message: 'Error interno del servidor' },
+      { 
+        success: false,
+        message: 'Error interno del servidor',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
@@ -134,9 +148,11 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
 
   return NextResponse.json(
     {
+      success: true,
       message: 'Registro exitoso',
       tenantId: result.tenant.id,
       redirect: '/onboarding',
+      timestamp: new Date().toISOString()
     },
     { status: 201 }
   );

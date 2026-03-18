@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { generateJWT } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validated = registerSchema.parse(body);
-
+    
     // CRÍTICO: Buscar plan por nombre en lugar de ID
     console.log('🔍 Buscando plan con nombre:', validated.planId);
     
@@ -67,7 +68,75 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('✅ Plan encontrado:', { id: plan.id, name: plan.name, price: plan.priceMonthly });
-    return createTenant(validated, plan);
+    
+    // CREAR TENANT CON TRIAL CORRECTAMENTE
+    const result = await prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          name: validated.businessName,
+          slug: validated.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          businessType: validated.businessType,
+          billingEmail: validated.email,
+          
+          // ← CRÍTICO: Configurar trial correctamente
+          status: 'trial', // ← NO 'active'
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // ← 14 días desde ahora
+          
+          planId: plan.id,
+        },
+      });
+
+      const passwordHash = await bcrypt.hash(validated.password, 10);
+      
+      const user = await tx.user.create({
+        data: {
+          email: validated.email,
+          passwordHash,
+          name: validated.businessName,
+          role: 'admin', // ← NO 'superadmin'
+          tenantId: tenant.id,
+        },
+      });
+
+      const subscription = await tx.subscription.create({
+        data: {
+          tenantId: tenant.id,
+          planId: plan.id,
+          status: 'trial', // ← También trial en subscription
+          currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          amountUsd: plan.priceMonthly,
+        },
+      });
+
+      return { tenant, user, subscription };
+    });
+
+    // Generar JWT con tenantId correcto
+    const token = await generateJWT({
+      userId: result.user.id,
+      tenantId: result.tenant.id, // ← CRÍTICO: Incluir tenantId
+      role: result.user.role,
+      email: result.user.email,
+    });
+
+    // Enviar email de bienvenida
+    await sendWelcomeEmail(validated.businessName, validated.email);
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Registro exitoso',
+        tenantId: result.tenant.id,
+        redirect: '/onboarding',
+        timestamp: new Date().toISOString()
+      },
+      { 
+        status: 201,
+        headers: {
+          'Set-Cookie': `token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800`,
+        },
+      }
+    );
   } catch (error) {
     console.error('❌ Error en registro:', error);
     
@@ -90,94 +159,6 @@ export async function POST(request: NextRequest) {
       { 
         success: false,
         message: 'Error interno del servidor',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    );
-  }
-}
-
-async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
-  try {
-    console.log('🔧 Creando tenant con datos:', { businessName: data.businessName, email: data.email, planId: plan.id });
-    
-    const passwordHash = await bcrypt.hash(data.password, 10);
-    const slug = data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    
-    console.log('🔧 Slug generado:', slug);
-
-    // Crear tenant + user + suscripción en transacción atómica
-    const result = await prisma.$transaction(async (tx: any) => {
-      console.log('🔧 Iniciando transacción...');
-      
-      // Crear tenant
-      const tenant = await tx.tenant.create({
-        data: {
-          slug,
-          name: data.businessName,
-          businessType: data.businessType,
-          logoUrl: null,
-          status: 'active',
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 días de prueba
-          billingEmail: data.email,
-          planId: plan.id,
-        },
-      });
-      
-      console.log('✅ Tenant creado:', { id: tenant.id, slug: tenant.slug });
-
-      // Crear usuario admin
-      const user = await tx.user.create({
-        data: {
-          tenantId: tenant.id,
-          email: data.email,
-          passwordHash,
-          role: 'admin',
-          name: data.businessName,
-        },
-      });
-      
-      console.log('✅ User creado:', { id: user.id, email: user.email });
-
-      // Crear suscripción inicial
-      const subscription = await tx.subscription.create({
-        data: {
-          tenantId: tenant.id,
-          planId: plan.id,
-          amountUsd: plan.priceMonthly,
-          status: 'active', // ← Activar inmediatamente para prueba
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
-        },
-      });
-      
-      console.log('✅ Subscription creada:', { id: subscription.id });
-
-      return { tenant, user, subscription };
-    });
-
-    console.log('✅ Transacción completada exitosamente');
-
-    // Enviar email de bienvenida
-    await sendWelcomeEmail(data.businessName, data.email);
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Registro exitoso',
-        tenantId: result.tenant.id,
-        redirect: '/onboarding',
-        timestamp: new Date().toISOString()
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('❌ Error creando tenant:', error);
-    console.error('❌ Stack trace:', error.stack);
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'Error al crear la cuenta. Por favor intenta de nuevo.',
-        error: error.message,
         timestamp: new Date().toISOString()
       },
       { status: 500 }

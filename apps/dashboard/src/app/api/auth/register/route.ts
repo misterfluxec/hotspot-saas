@@ -74,14 +74,11 @@ export async function POST(request: NextRequest) {
       const tenant = await tx.tenant.create({
         data: {
           name: validated.businessName,
-          slug: validated.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          slug: validated.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
           businessType: validated.businessType,
           billingEmail: validated.email,
-          
-          // ← CRÍTICO: Configurar trial correctamente
-          status: 'trial', // ← NO 'active'
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // ← 14 días desde ahora
-          
+          status: 'trial', // ← CRÍTICO: Estado inicial de trial
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // ← 30 días desde ahora
           planId: plan.id,
         },
       });
@@ -93,16 +90,17 @@ export async function POST(request: NextRequest) {
           email: validated.email,
           passwordHash,
           name: validated.businessName,
-          role: 'admin', // ← NO 'superadmin'
+          role: 'admin', // ← CRÍTICO: Rol 'admin', NO 'superadmin' 
           tenantId: tenant.id,
         },
       });
 
+      // 4. Crear suscripción en modo trial
       const subscription = await tx.subscription.create({
         data: {
           tenantId: tenant.id,
           planId: plan.id,
-          status: 'trial', // ← También trial en subscription
+          status: 'trial', 
           currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           amountUsd: plan.priceMonthly,
         },

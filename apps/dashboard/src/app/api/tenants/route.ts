@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { requireTenant, requireSuperAdmin, isSuperAdmin } from '@/lib/tenant-guard';
+import { requireTenant, isSuperAdmin } from '@/lib/tenant-guard';
 
 const prisma = new PrismaClient();
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Solo superadmin puede ver todos los tenants
-    const { tenantId: adminTenantId } = await requireSuperAdmin(request);
+    const { tenantId: adminTenantId } = await requireTenant(request, ['superadmin']);
     
     const allTenants = await prisma.tenant.findMany({
       include: {

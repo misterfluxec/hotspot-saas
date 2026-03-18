@@ -146,6 +146,7 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
           userId: user.id,
           planId: plan.id,
           planName: plan.name,
+          amountUsd: plan.priceMonthly, // ← CAMPO REQUERIDO
         },
       });
       

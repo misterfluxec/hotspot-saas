@@ -99,11 +99,17 @@ export async function POST(request: NextRequest) {
 
 async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
   try {
+    console.log('🔧 Creando tenant con datos:', { businessName: data.businessName, email: data.email, planId: plan.id });
+    
     const passwordHash = await bcrypt.hash(data.password, 10);
     const slug = data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    
+    console.log('🔧 Slug generado:', slug);
 
     // Crear tenant + user + suscripción en transacción atómica
     const result = await prisma.$transaction(async (tx: any) => {
+      console.log('🔧 Iniciando transacción...');
+      
       // Crear tenant
       const tenant = await tx.tenant.create({
         data: {
@@ -117,6 +123,8 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
           planId: plan.id,
         },
       });
+      
+      console.log('✅ Tenant creado:', { id: tenant.id, slug: tenant.slug });
 
       // Crear usuario admin
       const user = await tx.user.create({
@@ -128,6 +136,8 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
           name: data.businessName,
         },
       });
+      
+      console.log('✅ User creado:', { id: user.id, email: user.email });
 
       // Crear suscripción inicial
       const subscription = await tx.subscription.create({
@@ -138,9 +148,13 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
           planName: plan.name,
         },
       });
+      
+      console.log('✅ Subscription creada:', { id: subscription.id });
 
       return { tenant, user, subscription };
     });
+
+    console.log('✅ Transacción completada exitosamente');
 
     // Enviar email de bienvenida
     await sendWelcomeEmail(data.businessName, data.email);
@@ -157,10 +171,12 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
     );
   } catch (error) {
     console.error('❌ Error creando tenant:', error);
+    console.error('❌ Stack trace:', error.stack);
     return NextResponse.json(
       { 
         success: false,
         message: 'Error al crear la cuenta. Por favor intenta de nuevo.',
+        error: error.message,
         timestamp: new Date().toISOString()
       },
       { status: 500 }

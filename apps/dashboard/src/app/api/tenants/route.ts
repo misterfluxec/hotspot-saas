@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getTenantIdFromRequest, isSuperAdmin } from '@/lib/tenant-helper';
+import { requireTenant, requireSuperAdmin, isSuperAdmin } from '@/lib/tenant-guard';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Obtener tenantId del request
-    const tenantId = await getTenantIdFromRequest(request);
+    // Verificar si es superadmin para acceso global
     const superAdmin = await isSuperAdmin(request);
     
-    // 2. VERIFICAR ROL: Solo superadmin ve todos los tenants
     if (!superAdmin) {
-      // 3. FILTRAR POR tenantId DEL USUARIO (NO DEL QUERY PARAM)
+      // Para usuarios normales, solo pueden ver su propio tenant
+      const { tenantId } = await requireTenant(request, ['admin', 'superadmin']);
+      
       const tenants = await prisma.tenant.findMany({
         where: { id: tenantId }, // ← CRÍTICO: Filtrar por JWT, nunca por query params
         include: {
@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Solo superadmin puede ver todos
+    // Solo superadmin puede ver todos los tenants
+    const { tenantId: adminTenantId } = await requireSuperAdmin(request);
+    
     const allTenants = await prisma.tenant.findMany({
       include: {
         subscriptions: { 
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching tenants:', error);
     
-    if (error.message.includes('No autorizado')) {
+    if (error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Rol')) {
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 401 }

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getTenantIdFromRequest } from '@/lib/tenant-helper';
+import { requireTenant } from '@/lib/tenant-guard';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const tenantId = await getTenantIdFromRequest(request);
+    // Validar tenant y permisos
+    const { tenantId } = await requireTenant(request, ['admin', 'superadmin']);
     const portalConfig = await request.json();
 
     // Validar datos requeridos
@@ -17,9 +18,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Buscar portal existente del tenant
+    // Buscar portal existente del tenant (filtrado por JWT)
     let portal = await prisma.portal.findFirst({
-      where: { tenantId }
+      where: { tenantId } // ← Seguro: viene del JWT
     });
 
     if (portal) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       // Crear nuevo portal
       portal = await prisma.portal.create({
         data: {
-          tenantId,
+          tenantId, // ← Seguro: viene del JWT
           name: 'Portal Principal',
           template: 'modern',
           subdomain: `${tenantId}-portal`,
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Portal guardado:', {
-      tenantId,
+      tenantId, // ← Safe: del JWT
       portalId: portal.id,
       action: portal ? 'updated' : 'created'
     });
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error guardando configuración del portal:', error);
     
-    if (error.message.includes('No autorizado')) {
+    if (error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Rol')) {
       return NextResponse.json(
         { error: error.message },
         { status: 401 }

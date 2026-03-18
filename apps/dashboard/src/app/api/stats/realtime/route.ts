@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getTenantIdFromRequest, isSuperAdmin } from '@/lib/tenant-helper';
+import { requireTenant, isSuperAdmin } from '@/lib/tenant-guard';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = await getTenantIdFromRequest(request);
+    // Verificar si es superadmin
     const superAdmin = await isSuperAdmin(request);
     
-    // Si es superadmin, puede ver stats globales
     if (superAdmin) {
+      // Superadmin puede ver stats globales
       const globalStats = {
         totalTenants: await prisma.tenant.count(),
         totalUsers: await prisma.user.count(),
@@ -23,12 +23,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(globalStats);
     }
     
-    // Stats filtrados por tenantId
+    // Para usuarios normales, requerir tenant y filtrar
+    const { tenantId } = await requireTenant(request, ['admin', 'superadmin']);
+    
+    // Stats filtrados por tenantId del JWT
     const tenantStats = await Promise.all([
       // Visitantes activos (últimos 30 minutos)
       prisma.visitor.count({
         where: {
-          tenantId,
+          tenantId, // ← Seguro: viene del JWT
           lastSeenAt: {
             gte: new Date(Date.now() - 30 * 60 * 1000)
           }
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
       // Portales activos
       prisma.portal.count({
         where: {
-          tenantId,
+          tenantId, // ← Seguro: viene del JWT
           isPublished: true
         }
       }),
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       // Sesiones de hoy
       prisma.visitor.count({
         where: {
-          tenantId,
+          tenantId, // ← Seguro: viene del JWT
           createdAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0))
           }
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
       // Total de visitantes este mes
       prisma.visitor.count({
         where: {
-          tenantId,
+          tenantId, // ← Seguro: viene del JWT
           createdAt: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
@@ -75,7 +78,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching realtime stats:', error);
     
-    if (error.message.includes('No autorizado')) {
+    if (error.message.includes('No autorizado') || error.message.includes('Token') || error.message.includes('Rol')) {
       return NextResponse.json(
         { error: error.message },
         { status: 401 }

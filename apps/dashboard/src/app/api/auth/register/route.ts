@@ -143,10 +143,10 @@ async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
       const subscription = await tx.subscription.create({
         data: {
           tenantId: tenant.id,
-          userId: user.id,
           planId: plan.id,
-          planName: plan.name,
-          amountUsd: plan.priceMonthly, // ← CAMPO REQUERIDO
+          amountUsd: plan.priceMonthly,
+          status: 'active', // ← Activar inmediatamente para prueba
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
         },
       });
       

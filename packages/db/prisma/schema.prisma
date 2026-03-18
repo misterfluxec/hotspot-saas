@@ -83,7 +83,7 @@ model User {
 
 // Tabla de planes de suscripción
 model Plan {
-  id            String   @id @default(cuid())
+  id            String   @id 
   name          String
   priceMonthly  Float    @map("price_monthly")
   maxPortals    Int      @map("max_portals")

@@ -55,6 +55,12 @@ export default function RegisterPage() {
         body: JSON.stringify(data),
       });
 
+      // Verificar si la respuesta es válida antes de parsear JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('El servidor devolvió una respuesta inválida');
+      }
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -224,14 +230,14 @@ export default function RegisterPage() {
               <RadioGroup
                 value={selectedPlan}
                 onValueChange={setSelectedPlan}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
               >
                 {PLANS.map((plan) => (
                   <Label
                     key={plan.id}
                     htmlFor={plan.id}
                     className={cn(
-                      'flex flex-col items-center justify-between rounded-lg border p-6 cursor-pointer transition-all',
+                      'flex flex-col items-center justify-between rounded-lg border p-4 cursor-pointer transition-all min-h-[140px]',
                       'hover:bg-zinc-800/50',
                       selectedPlan === plan.id
                         ? 'border-blue-600 bg-blue-950/30'

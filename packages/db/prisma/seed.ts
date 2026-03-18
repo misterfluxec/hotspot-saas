@@ -47,15 +47,16 @@ async function main() {
   console.log('✅ Usuario superadmin creado:', superadmin.email);
   console.log('🔑 Contraseña: Admin2024!');
 
-  // Crear plan básico por defecto
-  let basicPlan = await prisma.plan.findFirst({
-    where: { name: 'Plan Básico' },
+  // Crear plan starter por defecto
+  let starterPlan = await prisma.plan.findFirst({
+    where: { name: 'Starter' },
   });
 
-  if (!basicPlan) {
-    basicPlan = await prisma.plan.create({
+  if (!starterPlan) {
+    starterPlan = await prisma.plan.create({
       data: {
-        name: 'Plan Básico',
+        id: 'starter', // ID fijo para coincidir con frontend
+        name: 'Starter',
         priceMonthly: 29.99,
         maxPortals: 3,
         maxBranches: 5,
@@ -73,17 +74,18 @@ async function main() {
     });
   }
 
-  console.log('✅ Plan básico creado:', basicPlan.name);
+  console.log('✅ Plan starter creado:', starterPlan.name);
 
-  // Crear plan profesional
-  let proPlan = await prisma.plan.findFirst({
-    where: { name: 'Plan Profesional' },
+  // Crear plan business
+  let businessPlan = await prisma.plan.findFirst({
+    where: { name: 'Business' },
   });
 
-  if (!proPlan) {
-    proPlan = await prisma.plan.create({
+  if (!businessPlan) {
+    businessPlan = await prisma.plan.create({
       data: {
-        name: 'Plan Profesional',
+        id: 'business', // ID fijo para coincidir con frontend
+        name: 'Business',
         priceMonthly: 79.99,
         maxPortals: 10,
         maxBranches: 20,
@@ -101,17 +103,18 @@ async function main() {
     });
   }
 
-  console.log('✅ Plan profesional creado:', proPlan.name);
+  console.log('✅ Plan business creado:', businessPlan.name);
 
   // Crear plan enterprise
   let enterprisePlan = await prisma.plan.findFirst({
-    where: { name: 'Plan Enterprise' },
+    where: { name: 'Enterprise' },
   });
 
   if (!enterprisePlan) {
     enterprisePlan = await prisma.plan.create({
       data: {
-        name: 'Plan Enterprise',
+        id: 'enterprise', // ID fijo para coincidir con frontend
+        name: 'Enterprise',
         priceMonthly: 199.99,
         maxPortals: -1, // Ilimitado
         maxBranches: -1, // Ilimitado

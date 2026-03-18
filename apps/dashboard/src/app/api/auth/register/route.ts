@@ -19,50 +19,54 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = registerSchema.parse(body);
 
-    // CRÍTICO: Normalizar planId para coincidencia con DB
-    const normalizedPlanId = validated.planId.toLowerCase().trim();
-    console.log('🔍 Buscando plan con ID normalizado:', normalizedPlanId);
-
-    // Buscar plan por ID fijo (starter, business, enterprise)
-    const plan = await prisma.plan.findUnique({
-      where: { id: normalizedPlanId },
+    // CRÍTICO: Buscar plan por nombre en lugar de ID
+    console.log('🔍 Buscando plan con nombre:', validated.planId);
+    
+    // Primero intentar por nombre exacto (Starter, Business, Enterprise)
+    let plan = await prisma.plan.findFirst({
+      where: {
+        name: {
+          equals: validated.planId.charAt(0).toUpperCase() + validated.planId.slice(1),
+          mode: 'insensitive',
+        },
+      },
     });
 
+    // Si no encuentra, buscar por nombre que contenga el término
     if (!plan) {
-      // Fallback: buscar por nombre si el ID no coincide
-      const planByName = await prisma.plan.findFirst({
+      plan = await prisma.plan.findFirst({
         where: {
           name: {
-            contains: normalizedPlanId.charAt(0).toUpperCase() + normalizedPlanId.slice(1),
+            contains: validated.planId,
             mode: 'insensitive',
           },
         },
       });
-
-      if (!planByName) {
-        const availablePlans = await prisma.plan.findMany({
-          select: { id: true, name: true, priceMonthly: true },
-        });
-        
-        console.error('❌ Plan no encontrado:', {
-          received: normalizedPlanId,
-          available: availablePlans,
-        });
-
-        return NextResponse.json(
-          {
-            success: false,
-            message: `Plan no encontrado: "${normalizedPlanId}". Planes disponibles: ${availablePlans.map((p: any) => p.name).join(', ')}`,
-            availablePlans,
-            timestamp: new Date().toISOString()
-          },
-          { status: 400 }
-        );
-      }
-      
-      return createTenant(validated, planByName);
     }
 
+    // Si aún no encuentra, listar todos los planes disponibles
+    if (!plan) {
+      const availablePlans = await prisma.plan.findMany({
+        select: { id: true, name: true, priceMonthly: true },
+      });
+      
+      console.error('❌ Plan no encontrado:', {
+        received: validated.planId,
+        available: availablePlans.map(p => ({ id: p.id, name: p.name })),
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Plan no encontrado: "${validated.planId}". Planes disponibles: ${availablePlans.map((p: any) => p.name).join(', ')}`,
+          availablePlans,
+          timestamp: new Date().toISOString()
+        },
+        { status: 400 }
+      );
+    }
+    
+    console.log('✅ Plan encontrado:', { id: plan.id, name: plan.name, price: plan.priceMonthly });
     return createTenant(validated, plan);
   } catch (error) {
     console.error('❌ Error en registro:', error);
@@ -94,68 +98,74 @@ export async function POST(request: NextRequest) {
 }
 
 async function createTenant(data: z.infer<typeof registerSchema>, plan: any) {
-  const passwordHash = await bcrypt.hash(data.password, 10);
-  const slug = data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  try {
+    const passwordHash = await bcrypt.hash(data.password, 10);
+    const slug = data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-  // Crear tenant + user + suscripción en transacción atómica
-  const result = await prisma.$transaction(async (tx: any) => {
-    // 1. Crear tenant
-    const tenant = await tx.tenant.create({
-      data: {
-        name: data.businessName,
-        slug,
-        businessType: data.businessType,
-        billingEmail: data.email,
-        status: 'trial',
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      },
+    // Crear tenant + user + suscripción en transacción atómica
+    const result = await prisma.$transaction(async (tx: any) => {
+      // Crear tenant
+      const tenant = await tx.tenant.create({
+        data: {
+          slug,
+          name: data.businessName,
+          businessType: data.businessType,
+          logoUrl: null,
+          status: 'active',
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 días de prueba
+          billingEmail: data.email,
+          planId: plan.id,
+        },
+      });
+
+      // Crear usuario admin
+      const user = await tx.user.create({
+        data: {
+          tenantId: tenant.id,
+          email: data.email,
+          passwordHash,
+          role: 'admin',
+          name: data.businessName,
+        },
+      });
+
+      // Crear suscripción inicial
+      const subscription = await tx.subscription.create({
+        data: {
+          tenantId: tenant.id,
+          userId: user.id,
+          planId: plan.id,
+          planName: plan.name,
+        },
+      });
+
+      return { tenant, user, subscription };
     });
 
-    // 2. Crear usuario admin
-    const user = await tx.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        name: data.businessName,
-        role: 'admin',
-        tenantId: tenant.id,
+    // Enviar email de bienvenida
+    await sendWelcomeEmail(data.businessName, data.email);
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Registro exitoso',
+        tenantId: result.tenant.id,
+        redirect: '/onboarding',
+        timestamp: new Date().toISOString()
       },
-    });
-
-    // 3. Crear suscripción trial
-    const subscription = await tx.subscription.create({
-      data: {
-        tenantId: tenant.id,
-        planId: plan.id,
-        status: 'trial',
-        currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        amountUsd: plan.priceMonthly,
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('❌ Error creando tenant:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        message: 'Error al crear la cuenta. Por favor intenta de nuevo.',
+        timestamp: new Date().toISOString()
       },
-    });
-
-    return { tenant, user, subscription };
-  });
-
-  console.log('✅ Registro completado:', {
-    tenantId: result.tenant.id,
-    userId: result.user.id,
-    planId: plan.id,
-    planName: plan.name,
-  });
-
-  // Enviar email de bienvenida
-  await sendWelcomeEmail(data.businessName, data.email);
-
-  return NextResponse.json(
-    {
-      success: true,
-      message: 'Registro exitoso',
-      tenantId: result.tenant.id,
-      redirect: '/onboarding',
-      timestamp: new Date().toISOString()
-    },
-    { status: 201 }
-  );
+      { status: 500 }
+    );
+  }
 }
 
 async function sendWelcomeEmail(businessName: string, email: string) {

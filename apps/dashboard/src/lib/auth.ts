@@ -130,7 +130,7 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResu
 
 export async function generateJWT(payload: {
   userId: string
-  tenantId: string | null
+  tenantId: string // ← CRÍTICO: Siempre string, nunca null
   role: string
   email: string
 }) {
@@ -146,7 +146,7 @@ export async function verifyJWT(token: string) {
     const { payload } = await jwtVerify(token, JWT_SECRET)
     return payload as {
       userId: string
-      tenantId: string | null
+      tenantId: string // ← CRÍTICO: Siempre string, nunca null
       role: string
       email: string
     }

@@ -1,6 +1,6 @@
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
-RUN corepack enable && corepack prepare yarn@stable --activate 
+RUN corepack enable && corepack prepare yarn@stable --activate
 WORKDIR /app
 
 FROM base AS deps
@@ -17,13 +17,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Generar Prisma Client (ajusta la ruta si tu carpeta es 'database' en lugar de 'db')
-RUN npx prisma generate --schema packages/db/prisma/schema.prisma
+# ✅ CORREGIDO: Ejecutar prisma generate desde packages/db para rutas relativas correctas
+RUN cd packages/db && npx prisma generate
 
 RUN cd apps/dashboard && npm run build
 
-FROM node:20-alpine AS runner
-RUN apk add --no-cache openssl
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

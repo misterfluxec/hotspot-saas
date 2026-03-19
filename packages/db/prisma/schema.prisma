@@ -1,6 +1,8 @@
 generator client {
   provider      = "prisma-client-js"
-  output        = "../../node_modules/.prisma/client"
+  // ✅ CORREGIDO: Ruta relativa correcta para monorepo desde packages/db/prisma/
+  // ../../ = root del proyecto (/app en Docker)
+  output        = "../../../node_modules/.prisma/client"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 

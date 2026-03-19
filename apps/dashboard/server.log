@@ -95,3 +95,29 @@ Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
 ✓ Compiled in 12ms
 ✓ Compiled in 8ms
 ✓ Compiled in 11ms
+⚠ Failed to reload dynamic routes: Error: ENOSPC: no space left on device, write
+    at ignore-listed frames {
+  errno: -28,
+  code: 'ENOSPC',
+  syscall: 'write'
+}
+Persisting failed: Unable to write SST file 00000148.sst
+
+CausError: ENOSPC: no space left on device, write
+    at ignore-listed frames {
+  errno: -28,
+  syscall: 'write',
+  code: 'ENOSPC'
+}
+⨯ uncaughtException: Error: ENOSPC: no space left on device, write
+    at ignore-listed frames {
+  errno: -28,
+  syscall: 'write',
+  code: 'ENOSPC'
+}
+⨯ uncaughtException:  Error: ENOSPC: no space left on device, write
+    at ignore-listed frames {
+  errno: -28,
+  syscall: 'write',
+  code: 'ENOSPC'
+}

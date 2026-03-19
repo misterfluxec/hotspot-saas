@@ -37,14 +37,24 @@ export default function RegisterPage() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    
+    // CORRECCIÓN CRÍTICA: Convertir valores correctamente
     const data = {
       businessName: formData.get('businessName') as string,
       businessType: formData.get('businessType') as string,
       email: formData.get('email') as string,
       password: formData.get('password') as string,
-      planId: selectedPlan.toLowerCase().trim(), // CRÍTICO: Normalización
+      planId: selectedPlan.toLowerCase().trim(), // Ya normalizado
+      // CORRECCIÓN: Checkbox "on" → boolean true
       termsAccepted: formData.get('terms') === 'on',
     };
+
+    // Antes del try/catch, añade una validación manual extra
+    if (!data.planId) {
+      setError("Por favor, selecciona un plan.");
+      setIsLoading(false);
+      return;
+    }
 
     console.log('📤 Enviando registro:', data);
 
@@ -53,26 +63,24 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include', // Para cookies
       });
 
-      // Verificar si la respuesta es válida antes de parsear JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('El servidor devolvió una respuesta inválida');
-      }
-
       const result = await response.json();
+      console.log('📡 Respuesta:', { status: response.status, result });
 
       if (!response.ok) {
-        throw new Error(result.message || 'Error en el registro');
+        throw new Error(result.message || `Error ${response.status}`);
       }
 
-      console.log('✅ Registro exitoso:', result);
-      router.push('/onboarding');
+      console.log('✅ Registro exitoso, redirigiendo...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      router.push(result.redirect || '/onboarding');
+      
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error inesperado';
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
+      console.error('❌ Error en registro:', err);
       setError(errorMessage);
-      console.error('❌ Error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -230,6 +238,7 @@ export default function RegisterPage() {
               <RadioGroup
                 value={selectedPlan}
                 onValueChange={setSelectedPlan}
+                name="plan" // ← CRÍTICO: Este name debe coincidir con formData.get('plan')
                 className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6"
               >
                 {PLANS.map((plan) => (

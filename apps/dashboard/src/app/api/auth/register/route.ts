@@ -11,8 +11,13 @@ const registerSchema = z.object({
   businessType: z.string().min(1, 'Tipo requerido'),
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres'),
-  planId: z.string().min(1, 'Plan requerido'),
-  termsAccepted: z.boolean().refine((v) => v === true, 'Debes aceptar los términos'),
+  planId: z.enum(['starter', 'business', 'enterprise']),
+  // CORRECCIÓN: Aceptar "on", "true", o boolean true
+  termsAccepted: z.union([
+    z.literal(true),
+    z.literal('on'),
+    z.literal('true'),
+  ]).transform((val) => val === true || val === 'on' || val === 'true'),
 });
 
 export async function POST(request: NextRequest) {
@@ -73,7 +78,7 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
         data: {
-          name: validated.businessName,
+          name: validated.businessName, // ← CORRECCIÓN: Usar campo 'name' de la DB
           slug: validated.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
           businessType: validated.businessType,
           billingEmail: validated.email,

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@/lib/auth';
 
 export default async function proxy(request: NextRequest) {
+  // Permitir rutas de autenticación sin token
+  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get('token')?.value;
   
   if (!token) {

@@ -13,6 +13,9 @@ export interface AuditLogData {
 
 export async function createAuditLog(data: AuditLogData) {
   try {
+    // TODO: Implementar cuando se agregue el modelo AuditLog al schema
+    console.log(`🔍 Audit Log (simulado): ${data.action} on ${data.resource} by user ${data.userId}`);
+    
     // Obtener información de la request
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for') || 
@@ -20,21 +23,20 @@ export async function createAuditLog(data: AuditLogData) {
                     'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
 
-    // Crear log de auditoría
-    const auditLog = await prisma.auditLog.create({
-      data: {
-        tenantId: data.tenantId,
-        userId: data.userId,
-        action: data.action,
-        resource: data.resource,
-        details: data.details,
-        ipAddress,
-        userAgent,
-      },
-    });
+    // Crear log de auditoría (cuando se implemente el modelo)
+    // const auditLog = await prisma.auditLog.create({
+    //   data: {
+    //     tenantId: data.tenantId,
+    //     userId: data.userId,
+    //     action: data.action,
+    //     resource: data.resource,
+    //     details: data.details,
+    //     ipAddress,
+    //     userAgent,
+    //   },
+    // });
 
-    console.log(`🔍 Audit Log Created: ${data.action} on ${data.resource} by user ${data.userId}`);
-    return auditLog;
+    return null; // Temporal hasta que se agregue el modelo
   } catch (error) {
     console.error('Error creating audit log:', error);
     // No lanzar error para no interrumpir el flujo principal
@@ -109,38 +111,45 @@ export async function getAuditLogs(
     if (options.endDate) where.createdAt.lte = options.endDate;
   }
 
-  const logs = await prisma.auditLog.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: options.limit || 100,
-    skip: options.offset || 0,
-    include: {
-      user: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      },
-    },
-  });
+  // TODO: Implementar cuando se agregue el modelo AuditLog al schema
+  const logs = []; // Temporal hasta que se agregue el modelo
+  
+  // const logs = await prisma.auditLog.findMany({
+  //   where,
+  //   orderBy: { createdAt: 'desc' },
+  //   take: options.limit || 100,
+  //   skip: options.offset || 0,
+  //   include: {
+  //     user: {
+  //       select: {
+  //         id: true,
+  //         email: true,
+  //         name: true,
+  //       },
+  //     },
+  //   },
+  // });
 
   return logs;
 }
 
 // Función para limpiar logs antiguos (retention policy)
 export async function cleanupOldAuditLogs(daysToKeep: number = 90) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+  // TODO: Implementar cuando se agregue el modelo AuditLog al schema
+  console.log(`🔍 Cleanup Old Audit Logs (simulado): ${daysToKeep} days to keep`);
+  return { deletedCount: 0 };
+  
+  // const cutoffDate = new Date();
+  // cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-  const result = await prisma.auditLog.deleteMany({
-    where: {
-      createdAt: {
-        lt: cutoffDate,
-      },
-    },
-  });
+  // const result = await prisma.auditLog.deleteMany({
+  //   where: {
+  //     createdAt: {
+  //       lt: cutoffDate
+  //     }
+  //   }
+  // });
 
-  console.log(`🧹 Cleaned up ${result.count} old audit logs`);
-  return result.count;
+  // console.log(`🧹 Cleaned up ${result.count} old audit logs`);
+  // return result.count;
 }

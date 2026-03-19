@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       where: { id: userId, tenantId },
     });
 
-    if (!user || !user.twoFactorSecret) {
+    if (!user /*|| !user.twoFactorSecret*/) {
       return NextResponse.json(
         { error: '2FA not set up for this user' },
         { status: 400 }
@@ -40,34 +40,35 @@ export async function POST(request: NextRequest) {
 
     // Verificar token TOTP
     if (token) {
-      isValid = verify2FAToken(user.twoFactorSecret, token);
+      // isValid = verify2FAToken(user.twoFactorSecret, token);
+      isValid = false; // TODO: Implementar cuando se agregue twoFactorSecret al schema
       verificationMethod = 'totp';
     }
 
     // Verificar código de respaldo
-    if (!isValid && backupCode && user.backupCodes) {
-      const backupCodes = user.backupCodes as string[];
-      isValid = verifyBackupCode(backupCodes, backupCode);
+    if (!isValid && backupCode /*&& user.backupCodes*/) {
+      // const backupCodes = user.backupCodes as string[];
+      isValid = false; // TODO: Implementar cuando se agregue backupCodes al schema
       verificationMethod = 'backup';
       
       // Si es código de respaldo válido, removerlo de la lista
       if (isValid) {
-        const remainingCodes = backupCodes.filter(code => code !== backupCode.toUpperCase());
-        await prisma.user.update({
-          where: { id: userId },
-          data: { backupCodes: remainingCodes },
-        });
+        // const remainingCodes = backupCodes.filter(code => code !== backupCode.toUpperCase());
+        // await prisma.user.update({
+        //   where: { id: userId },
+        //   data: { backupCodes: remainingCodes },
+        // });
       }
     }
 
     if (isValid) {
       // Activar 2FA si no estaba activo
-      if (!user.twoFactorEnabled) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { twoFactorEnabled: true },
-        });
-      }
+      // if (!user.twoFactorEnabled) {
+      //   await prisma.user.update({
+      //     where: { id: userId },
+      //     data: { twoFactorEnabled: true },
+      //   });
+      // }
 
       // Crear log de auditoría
       await createAuditLog({

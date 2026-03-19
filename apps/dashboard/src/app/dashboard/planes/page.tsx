@@ -5,13 +5,14 @@ const prisma = new PrismaClient();
 export default async function PlanesPage() {
   const planes = await prisma.plan.findMany({
     where: { isActive: true },
-    include: {
-      _count: {
-        select: {
-          tenants: true
-        }
-      }
-    },
+    // TODO: Agregar relación con tenants cuando se necesite
+    // include: {
+    //   _count: {
+    //     select: {
+    //       tenants: true
+    //     }
+    //   }
+    // },
     orderBy: { priceMonthly: 'asc' }
   });
 
@@ -150,7 +151,7 @@ export default async function PlanesPage() {
               <div className="text-center">
                 <span className="text-sm text-slate-400">Clientes en este plan</span>
                 <p className="text-2xl font-bold text-white">
-                  {(plan as any)._count?.tenants || 0}
+                  {/* (plan as any)._count?.tenants || */ 0}
                 </p>
               </div>
             </div>

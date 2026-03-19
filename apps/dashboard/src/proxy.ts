@@ -5,7 +5,7 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'fallback-secret-netfly-2026'
 );
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. LISTA BLANCA ABSOLUTA (Rutas que NUNCA deben dar 401)

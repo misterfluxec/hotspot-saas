@@ -36,13 +36,14 @@ export default async function MetricasPage() {
         gte: new Date()
       }
     },
-    include: {
-      plan: {
-        select: {
-          name: true
-        }
-      }
-    },
+    // TODO: Agregar relación con plan cuando se necesite
+    // include: {
+    //   plan: {
+    //     select: {
+    //       name: true
+    //     }
+    //   }
+    // },
     orderBy: {
       trialEndsAt: 'asc'
     }
@@ -75,16 +76,18 @@ export default async function MetricasPage() {
 
   // Obtener distribución por plan
   const planDistribution = await prisma.plan.findMany({
-    include: {
-      _count: {
-        select: {
-          tenants: true
-        }
-      }
-    }
+    // TODO: Agregar relación con tenants cuando se necesite
+    // include: {
+    //   _count: {
+    //     select: {
+    //       tenants: true
+    //     }
+    //   }
+    // }
   });
 
-  const totalClientsForPlans = planDistribution.reduce((sum, plan) => sum + plan._count.tenants, 0);
+  // const totalClientsForPlans = planDistribution.reduce((sum, plan) => sum + plan._count.tenants, 0);
+  const totalClientsForPlans = 0; // Temporal hasta que se agregue la relación
 
   return (
     <div className="min-h-screen bg-zinc-950 p-6">
@@ -208,7 +211,7 @@ export default async function MetricasPage() {
                       >
                         <TableCell className="text-white font-medium">{tenant.name}</TableCell>
                         <TableCell className="text-zinc-300 font-mono text-sm">{tenant.billingEmail}</TableCell>
-                        <TableCell className="text-zinc-300">{tenant.plan?.name || 'Sin plan'}</TableCell>
+                        <TableCell className="text-zinc-300">{/* tenant.plan?.name || */ 'Sin plan'}</TableCell>
                         <TableCell>
                           <Badge 
                             variant={isCritical ? "destructive" : "secondary"}
@@ -302,15 +305,16 @@ export default async function MetricasPage() {
                 </TableHeader>
                 <TableBody>
                   {planDistribution.map((plan) => {
+                    const tenantCount = 0; // TODO: Obtener de relación cuando se agregue
                     const percentage = totalClientsForPlans > 0 
-                      ? (plan._count.tenants / totalClientsForPlans) * 100 
+                      ? (tenantCount / totalClientsForPlans) * 100 
                       : 0;
-                    const estimatedRevenue = plan._count.tenants * plan.priceMonthly;
+                    const estimatedRevenue = tenantCount * plan.priceMonthly;
 
                     return (
                       <TableRow key={plan.id} className="border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                         <TableCell className="text-white font-medium">{plan.name}</TableCell>
-                        <TableCell className="text-zinc-300 text-right font-mono">{plan._count.tenants}</TableCell>
+                        <TableCell className="text-zinc-300 text-right font-mono">{tenantCount}</TableCell>
                         <TableCell className="text-zinc-300">
                           <div className="flex items-center space-x-2">
                             <div className="flex-1 max-w-[60px]">

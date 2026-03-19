@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       prisma.visitor.count({
         where: {
           tenantId, // ← Seguro: viene del JWT
-          createdAt: {
+          firstSeenAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0))
           }
         }
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       prisma.visitor.count({
         where: {
           tenantId, // ← Seguro: viene del JWT
-          createdAt: {
+          firstSeenAt: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         }

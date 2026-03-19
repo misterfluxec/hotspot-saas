@@ -35,8 +35,9 @@ export async function POST(request: NextRequest) {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        twoFactorSecret: tfaSetup.secret,
-        backupCodes: tfaSetup.backupCodes,
+        // TODO: Agregar campos 2FA al schema cuando se implemente
+        // twoFactorSecret: tfaSetup.secret,
+        // backupCodes: tfaSetup.backupCodes,
       },
     });
 

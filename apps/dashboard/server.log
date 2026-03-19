@@ -1,0 +1,94 @@
+
+> dashboard@0.1.0 dev
+> next dev -p 3003
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3003
+- Network:       http://192.168.254.3:3003
+- Environments: .env.local
+
+✓ Starting...
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 670ms
+❌ Error en registro: Error [ZodError]: [
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "businessName"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  },
+  {
+    "expected": "string",
+    "code": "invalid_type",
+    "path": [
+      "businessType"
+    ],
+    "message": "Invalid input: expected string, received undefined"
+  },
+  {
+    "expected": "boolean",
+    "code": "invalid_type",
+    "path": [
+      "termsAccepted"
+    ],
+    "message": "Invalid input: expected boolean, received undefined"
+  }
+]
+    at POST (src/app/api/auth/register/route.ts:21:38)
+  19 |   try {
+  20 |     const body = await request.json();
+> 21 |     const validated = registerSchema.parse(body);
+     |                                      ^
+  22 |     
+  23 |     // CRÍTICO: Buscar plan por nombre en lugar de ID
+  24 |     console.log('🔍 Buscando plan con nombre:', validated.planId);
+ POST /api/auth/register 400 in 808ms (compile: 628ms, render: 180ms)
+❌ Error en GET /api/visitors: Error: No autorizado: Token no encontrado
+    at requireTenant (src/lib/tenant-guard.ts:57:11)
+    at GET (src/app/api/visitors/route.ts:20:45)
+  55 |   const token = request.cookies.get('token')?.value;  
+  56 |   if (!token) {
+> 57 |     throw new Error('No autorizado: Token no encontrado');
+     |           ^
+  58 |   }
+  59 |
+  60 |   // 2. Verificar y decodificar JWT
+ GET /api/visitors 401 in 242ms (compile: 139ms, render: 103ms)
+🔍 Buscando plan con nombre: business
+✅ Plan encontrado: { id: 'business', name: 'Business', price: 79.99 }
+🔑 Generando JWT con payload: {
+  userId: 'cmmwvs1rm000445g9wilr5hdy',
+  tenantId: 'cmmwvs1ou000245g9rqokxrwj',
+  role: 'admin'
+}
+✅ JWT generado exitosamente
+
+      📧 EMAIL DE BIENVENIDA ENVIADO A: test-final@netfly.com
+      
+      Asunto: ¡Bienvenido a la familia de HotSpot SaaS, Net Fly Test!
+      HTML Premium: Diseño con gradientes y glassmorphism
+    
+ POST /api/auth/register 201 in 280ms (compile: 7ms, render: 273ms)
+Error: Both middleware file "./src/middleware.ts" and proxy file "./src/proxy.ts" are detected. Please use "./src/proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+⨯ unhandledRejection: Error: Both middleware file "./src/middleware.ts" and proxy file "./src/proxy.ts" are detected. Please use "./src/proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+⨯ unhandledRejection:  Error: Both middleware file "./src/middleware.ts" and proxy file "./src/proxy.ts" are detected. Please use "./src/proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+⨯ The file "./src/proxy.ts" must export a function, either as a default export or as a named "proxy" export.
+This function is what Next.js runs for every request handled by this proxy (previously called middleware).
+
+Why this happens:
+- You are migrating from `middleware` to `proxy`, but haven't updated the exported function.
+- The file exists but doesn't export a function.
+- The export is not a function (e.g., an object or constant).
+- There's a syntax error preventing the export from being recognized.
+
+To fix it:
+- Ensure this file has either a default or "proxy" function export.
+
+Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Compiled in 209ms
+✓ Compiled in 7ms

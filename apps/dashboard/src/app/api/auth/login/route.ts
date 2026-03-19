@@ -5,9 +5,11 @@ import { SignJWT } from 'jose';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-netfly-2026');
 
-// Usamos .passthrough() para evitar errores si el frontend envía campos extra (como 'remember')
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'fallback-secret-netfly-2026'
+);
+
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(1, 'Contraseña requerida'),
@@ -18,21 +20,44 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = loginSchema.parse(body);
 
-    // Búsqueda global de usuario (incluye superadmin y clientes)
+    // Búsqueda case-insensitive con tenant incluido
     const user = await prisma.user.findFirst({
-      where: { email: { equals: validated.email, mode: 'insensitive' } },
-      include: { tenant: true }
+      where: { 
+        email: { 
+          equals: validated.email, 
+          mode: 'insensitive' 
+        } 
+      },
+      include: { 
+        tenant: { 
+          select: { 
+            id: true, 
+            name: true, 
+            status: true,
+            trialEndsAt: true 
+          } 
+        } 
+      }
     });
 
+    // Validación unificada de credenciales
     if (!user || !(await bcrypt.compare(validated.password, user.passwordHash))) {
-      return NextResponse.json({ message: 'Credenciales incorrectas' }, { status: 401 });
+      console.warn('⚠️ Login fallido:', { email: validated.email });
+      return NextResponse.json(
+        { message: 'Credenciales incorrectas' }, 
+        { status: 401 }
+      );
     }
 
-    if (user.tenant && user.tenant.status === 'suspended') {
-      return NextResponse.json({ message: 'Cuenta de negocio suspendida' }, { status: 403 });
+    // Verificar estado del tenant
+    if (user.tenant?.status === 'suspended') {
+      return NextResponse.json(
+        { message: 'Cuenta suspendida. Contacta a soporte.' }, 
+        { status: 403 }
+      );
     }
 
-    // Generar Token Multi-tenant
+    // Generar JWT compatible con Edge Runtime
     const token = await new SignJWT({ 
         userId: user.id, 
         tenantId: user.tenantId || 'SYSTEM', 
@@ -48,17 +73,35 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      user: { id: user.id, email: user.email, role: user.role, tenantId: user.tenantId },
-      redirect: user.role === 'superadmin' ? '/dashboard' : '/dashboard/clientes'
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role, 
+        tenantId: user.tenantId 
+      },
+      redirect: user.role === 'superadmin' ? '/dashboard' : '/cliente'
     }, {
       status: 200,
       headers: {
-        'Set-Cookie': `token=${token}; Path=/; HttpOnly; ${isProd ? 'Secure; ' : ''}SameSite=Lax; Max-Age=604800` 
+        'Set-Cookie': `token=${token}; Path=/; HttpOnly; ${
+          isProd ? 'Secure; ' : ''
+        }SameSite=Lax; Max-Age=604800`
       }
     });
+
   } catch (error) {
-    console.error('❌ Login Error:', error);
-    if (error instanceof z.ZodError) return NextResponse.json({ message: 'Datos inválidos', errors: error.issues }, { status: 400 });
-    return NextResponse.json({ message: 'Error interno del servidor' }, { status: 500 });
+    console.error('❌ Error en login:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { message: 'Datos inválidos', errors: error.issues }, 
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { message: 'Error interno del servidor' }, 
+      { status: 500 }
+    );
   }
 }

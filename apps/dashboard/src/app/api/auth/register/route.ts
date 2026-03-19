@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { SignJWT } from 'jose';
 import { z } from 'zod';
-import { generateJWT } from '@/lib/auth';
 
 const prisma = new PrismaClient();
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'fallback-secret-netfly-2026'
+);
 
 const registerSchema = z.object({
   businessName: z.string().min(2, 'Nombre muy corto'),
@@ -12,158 +16,129 @@ const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres'),
   planId: z.enum(['starter', 'business', 'enterprise']),
-  // CORRECCIÓN: Aceptar "on", "true", o boolean true
-  termsAccepted: z.union([
-    z.literal(true),
-    z.literal('on'),
-    z.literal('true'),
-  ]).transform((val) => val === true || val === 'on' || val === 'true'),
+  termsAccepted: z.boolean().refine((v) => v === true, 'Debes aceptar términos'),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validated = registerSchema.parse(body);
+
+    // CRÍTICO: Normalizar planId para coincidencia exacta
+    const normalizedPlanId = validated.planId.toLowerCase().trim();
     
-    // CRÍTICO: Buscar plan por nombre en lugar de ID
-    console.log('🔍 Buscando plan con nombre:', validated.planId);
-    
-    // Primero intentar por nombre exacto (Starter, Business, Enterprise)
-    let plan = await prisma.plan.findFirst({
-      where: {
-        name: {
-          equals: validated.planId.charAt(0).toUpperCase() + validated.planId.slice(1),
-          mode: 'insensitive',
-        },
-      },
+    // Buscar plan por ID fijo
+    const plan = await prisma.plan.findUnique({
+      where: { id: normalizedPlanId },
+      select: { id: true, name: true, priceMonthly: true }
     });
 
-    // Si no encuentra, buscar por nombre que contenga el término
     if (!plan) {
-      plan = await prisma.plan.findFirst({
-        where: {
-          name: {
-            contains: validated.planId,
-            mode: 'insensitive',
-          },
-        },
-      });
-    }
-
-    // Si aún no encuentra, listar todos los planes disponibles
-    if (!plan) {
-      const availablePlans = await prisma.plan.findMany({
-        select: { id: true, name: true, priceMonthly: true },
-      });
-      
-      console.error('❌ Plan no encontrado:', {
-        received: validated.planId,
-        available: availablePlans.map(p => ({ id: p.id, name: p.name })),
-      });
-
+      const available = await prisma.plan.findMany({ select: { id: true, name: true }});
       return NextResponse.json(
-        {
-          success: false,
-          message: `Plan no encontrado: "${validated.planId}". Planes disponibles: ${availablePlans.map((p: any) => p.name).join(', ')}`,
-          availablePlans,
-          timestamp: new Date().toISOString()
+        { 
+          message: `Plan no válido: "${normalizedPlanId}". Disponibles: ${available.map(p => p.id).join(', ')}` 
         },
         { status: 400 }
       );
     }
-    
-    console.log('✅ Plan encontrado:', { id: plan.id, name: plan.name, price: plan.priceMonthly });
-    
-    // CREAR TENANT CON TRIAL CORRECTAMENTE
+
+    // Transacción atómica: tenant + user + subscription
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Crear tenant con trial
       const tenant = await tx.tenant.create({
         data: {
-          name: validated.businessName, // ← CORRECCIÓN: Usar campo 'name' de la DB
+          name: validated.businessName,
           slug: validated.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
           businessType: validated.businessType,
           billingEmail: validated.email,
-          status: 'trial', // ← CRÍTICO: Estado inicial de trial
-          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // ← 30 días desde ahora
-          planId: plan.id,
+          status: 'trial',
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
         },
       });
 
+      // 2. Hash de contraseña
       const passwordHash = await bcrypt.hash(validated.password, 10);
-      
+
+      // 3. Crear usuario admin
       const user = await tx.user.create({
         data: {
           email: validated.email,
-          passwordHash,
+          passwordHash: passwordHash,  // ← CRÍTICO: Campo correcto
           name: validated.businessName,
-          role: 'admin', // ← CRÍTICO: Rol 'admin', NO 'superadmin' 
+          role: 'admin',
           tenantId: tenant.id,
         },
       });
 
-      // 4. Crear suscripción en modo trial
+      // 4. Crear suscripción trial
       const subscription = await tx.subscription.create({
         data: {
           tenantId: tenant.id,
           planId: plan.id,
-          status: 'trial', 
+          status: 'trial',
           currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           amountUsd: plan.priceMonthly,
         },
       });
 
-      return { tenant, user, subscription };
+      return { tenant, user, subscription, plan };
     });
 
-    // Generar JWT con tenantId correcto
-    const token = await generateJWT({
+    // Generar JWT
+    const token = await new SignJWT({
       userId: result.user.id,
-      tenantId: result.tenant.id, // ← CRÍTICO: Incluir tenantId
+      tenantId: result.tenant.id,
       role: result.user.role,
       email: result.user.email,
-    });
+    })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(JWT_SECRET);
 
-    // Enviar email de bienvenida
-    await sendWelcomeEmail(validated.businessName, validated.email);
+    // Email de bienvenida (simulado - listo para Resend)
+    console.log('📧 [SIMULADO] Email de bienvenida:', {
+      to: validated.email,
+      subject: '¡Bienvenido a HotSpot SaaS!',
+      html: `<p>Hola ${validated.businessName}, tu prueba de 14 días ha comenzado.</p>` 
+    });
 
     return NextResponse.json(
       {
-        success: true,
         message: 'Registro exitoso',
         tenantId: result.tenant.id,
         redirect: '/onboarding',
-        timestamp: new Date().toISOString()
       },
-      { 
+      {
         status: 201,
         headers: {
-          'Set-Cookie': `token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800`,
-        },
+          'Set-Cookie': `token=${token}; Path=/; HttpOnly; ${
+            process.env.NODE_ENV === 'production' ? 'Secure; ' : ''
+          }SameSite=Lax; Max-Age=604800`
+        }
       }
     );
+
   } catch (error) {
     console.error('❌ Error en registro:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
-          success: false,
-          message: 'Datos inválidos', 
-          errors: error.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message
-          }))
-        },
+        { message: 'Datos inválidos', errors: error.issues },
         { status: 400 }
       );
     }
-
-    // Error general
+    
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { message: 'Este email ya está registrado' },
+        { status: 409 }
+      );
+    }
+    
     return NextResponse.json(
-      { 
-        success: false,
-        message: 'Error interno del servidor',
-        timestamp: new Date().toISOString()
-      },
+      { message: 'Error interno del servidor' },
       { status: 500 }
     );
   }

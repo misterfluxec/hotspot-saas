@@ -1,8 +1,6 @@
-// Esquema de base de datos para HotSpot SaaS
-// Sistema multi-tenant para gestión de WiFi en negocios
-
 generator client {
   provider      = "prisma-client-js"
+  output        = "../../node_modules/.prisma/client"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -11,206 +9,165 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Tabla de tenants (clientes multi-tenant)
 model Tenant {
-  id            String   @id @default(cuid())
-  slug          String   @unique // URL única para cada tenant
+  id            String    @id @default(cuid())
   name          String
-  businessType  String   @map("business_type") // tipo de negocio: restaurante, hotel, oficina, etc.
-  logoUrl       String?  @map("logo_url")
-  status        String   @default("trial") // trial, active, suspended, cancelled
-  trialEndsAt   DateTime? @map("trial_ends_at")
-  billingEmail  String   @map("billing_email")
-  planId        String?  @map("plan_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  slug          String    @unique
+  businessType  String
+  billingEmail  String
+  status        String    @default("trial") // 'trial' | 'active' | 'suspended'
+  trialEndsAt   DateTime?
+  planId        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relaciones
-  plan         Plan?          @relation(fields: [planId], references: [id])
-  users        User[]
-  branches     Branch[]
-  portals      Portal[]
-  visitors     Visitor[]
-  campaigns    Campaign[]
+  users         User[]
+  branches      Branch[]
+  portals       Portal[]
+  visitors      Visitor[]
+  campaigns     Campaign[]
   subscriptions Subscription[]
-  auditLogs    AuditLog[]
 
   @@map("tenants")
 }
 
-// Tabla de auditoría del sistema
-model AuditLog {
-  id        String   @id @default(cuid())
-  tenantId  String
-  userId    String
-  action    String
-  resource  String
-  details   Json?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  
-  // Relaciones inversas
-  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([tenantId, createdAt])
-  @@map("audit_logs")
-}
-
-// Tabla de usuarios por tenant
 model User {
-  id               String    @id @default(cuid())
-  tenantId         String    @map("tenant_id")
-  email            String
-  passwordHash     String    @map("password_hash")
-  role             String    @default("user") // admin, user, readonly
-  name             String
-  lastLoginAt      DateTime? @map("last_login_at")
-  twoFactorEnabled Boolean   @default(false) @map("two_factor_enabled")
-  twoFactorSecret String?   @map("two_factor_secret")
-  backupCodes     Json?     @map("backup_codes")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  tenantId      String
+  email         String
+  passwordHash  String   @map("password_hash")  // ← CRÍTICO: Mapeo correcto
+  role          String   @default("admin")      // 'admin' | 'superadmin'
+  name          String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relaciones
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  auditLogs AuditLog[]
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
 
+  // Índices únicos por tenant
   @@unique([tenantId, email])
   @@map("users")
 }
 
-// Tabla de planes de suscripción
 model Plan {
-  id            String   @id 
+  id            String   @id @default(cuid())  // ← Se sobrescribe en seed con IDs fijos
   name          String
-  priceMonthly  Float    @map("price_monthly")
-  maxPortals    Int      @map("max_portals")
-  maxBranches   Int      @map("max_branches")
-  maxVisitorsMo Int      @map("max_visitors_mo")
-  aiRequestsMo  Int      @map("ai_requests_mo")
-  features      Json     // características del plan en formato JSON
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  priceMonthly  Float
+  maxPortals    Int
+  maxBranches   Int
+  maxVisitorsMo Int
+  aiRequestsMo Int
+  features      Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relaciones
-  tenants       Tenant[]
   subscriptions Subscription[]
 
   @@map("plans")
 }
 
-// Tabla de sucursales de cada tenant
 model Branch {
-  id             String    @id @default(cuid())
-  tenantId       String    @map("tenant_id")
-  name           String
-  address        String
-  timezone       String    @default("America/Guayaquil")
-  routerType     String    @map("router_type") // mikrotik, ubiquiti, cisco, etc.
-  routerIp       String    @map("router_ip")
-  routerUser     String    @map("router_user")
-  routerPassEnc  String    @map("router_pass_enc") // contraseña encriptada
-  portalId       String?   @map("portal_id")
-  isOnline       Boolean   @default(false) @map("is_online")
-  lastSeenAt     DateTime? @map("last_seen_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String
+  address      String?
+  timezone     String?  @default("America/Guayaquil")
+  routerType   String?  // 'mikrotik' | 'ubiquiti' | 'other'
+  routerIp     String?
+  routerUser   String?
+  routerPassEnc String? // Encriptada
+  portalId     String?
+  isOnline     Boolean  @default(false)
+  lastSeenAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relaciones
-  tenant       Tenant      @relation(fields: [tenantId], references: [id])
-  portals      Portal[]
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  portal       Portal?  @relation(fields: [portalId], references: [id])
   visitors     Visitor[]
-  campaigns    Campaign[]
 
   @@map("branches")
 }
 
-// Tabla de portales cautivos
 model Portal {
-  id             String   @id @default(cuid())
-  tenantId       String   @map("tenant_id")
-  name           String
-  template       String   // template del portal: modern, classic, corporate, etc.
-  subdomain      String   // subdomain.labodegaec.com
-  config         Json     // configuración específica del portal
-  sessionMinutes Int      @default(60) @map("session_minutes")
-  speedKbps      Int?     @map("speed_kbps") // límite de velocidad en kbps
-  quotaMb        Int?     @map("quota_mb") // cuota de datos en MB
-  isPublished    Boolean  @default(false) @map("is_published")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  template      String   @default("aura")  // 'aura' | 'pulse' | 'vibe'
+  subdomain     String?  @unique
+  config        Json?
+  sessionMinutes Int     @default(60)
+  speedKbps     Int?
+  quotaMb       Int?
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relaciones
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branches Branch[]
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  branches      Branch[]
 
-  @@unique([tenantId, subdomain])
   @@map("portals")
 }
 
-// Tabla de visitantes
 model Visitor {
-  id           String    @id @default(cuid())
-  tenantId     String    @map("tenant_id")
-  branchId     String?   @map("branch_id")
-  name         String?
-  email        String?
-  phone        String?
-  macAddress   String    @map("mac_address")
-  visitCount   Int       @default(1) @map("visit_count")
-  firstSeenAt  DateTime  @default(now()) @map("first_seen_at")
-  lastSeenAt   DateTime  @default(now()) @map("last_seen_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  tenantId    String
+  branchId    String?
+  name        String?
+  email       String?
+  phone       String?
+  macAddress  String
+  visitCount  Int      @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
 
   // Relaciones
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  branch      Branch?  @relation(fields: [branchId], references: [id])
 
-  @@unique([tenantId, macAddress])
   @@map("visitors")
 }
 
-// Tabla de campañas de marketing
 model Campaign {
-  id         String   @id @default(cuid())
-  tenantId   String   @map("tenant_id")
-  name       String
-  type       String   // banner, popup, email, sms
-  assetUrl   String?  @map("asset_url") // URL del archivo multimedia
-  clickUrl   String?  @map("click_url") // URL de destino al hacer clic
-  weight     Int      @default(1) // peso para selección aleatoria
-  schedule   Json     // configuración de programación
-  branchIds  String[] @map("branch_ids") // IDs de sucursales donde se muestra
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  type      String   // 'email' | 'sms' | 'push'
+  assetUrl  String?
+  clickUrl  String?
+  weight    Int      @default(1)
+  schedule  Json?
+  branchIds String[] // IDs de sucursales objetivo
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branches Branch[]
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
 
   @@map("campaigns")
 }
 
-// Tabla de suscripciones activas
 model Subscription {
-  id                String    @id @default(cuid())
-  tenantId          String    @map("tenant_id")
-  planId            String    @map("plan_id")
-  mpPreapprovalId   String?   @map("mp_preapproval_id") // ID de MercadoPago
-  status            String    @default("pending") // pending, active, cancelled, paused
-  currentPeriodEnd  DateTime? @map("current_period_end")
-  amountUsd         Float     @map("amount_usd")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  tenantId        String
+  planId          String
+  mpPreapprovalId String?  // MercadoPago
+  status          String   @default("trial")  // 'trial' | 'active' | 'cancelled'
+  currentPeriodEnd DateTime?
+  amountUsd       Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relaciones
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  plan   Plan   @relation(fields: [planId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  plan            Plan     @relation(fields: [planId], references: [id])
 
   @@map("subscriptions")
 }

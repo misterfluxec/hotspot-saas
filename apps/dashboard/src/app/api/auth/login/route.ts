@@ -7,18 +7,20 @@ import { z } from 'zod';
 const prisma = new PrismaClient();
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-netfly-2026');
 
+// Usamos .passthrough() para evitar errores si el frontend envía campos extra (como 'remember')
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(1, 'Contraseña requerida'),
-});
+}).passthrough();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validated = loginSchema.parse(body);
 
+    // Búsqueda global de usuario (incluye superadmin y clientes)
     const user = await prisma.user.findFirst({
-      where: { email: validated.email },
+      where: { email: { equals: validated.email, mode: 'insensitive' } },
       include: { tenant: true }
     });
 
@@ -26,14 +28,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Credenciales incorrectas' }, { status: 401 });
     }
 
-    if (user.tenant?.status === 'suspended') {
-      return NextResponse.json({ message: 'Cuenta suspendida' }, { status: 403 });
+    if (user.tenant && user.tenant.status === 'suspended') {
+      return NextResponse.json({ message: 'Cuenta de negocio suspendida' }, { status: 403 });
     }
 
-    // Generar Token con Payload Multi-tenant
+    // Generar Token Multi-tenant
     const token = await new SignJWT({ 
         userId: user.id, 
-        tenantId: user.tenantId, 
+        tenantId: user.tenantId || 'SYSTEM', 
         role: user.role, 
         email: user.email 
       })
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: { id: user.id, email: user.email, role: user.role, tenantId: user.tenantId },
-      redirect: user.role === 'superadmin' ? '/dashboard' : '/cliente'
+      redirect: user.role === 'superadmin' ? '/dashboard' : '/dashboard/clientes'
     }, {
       status: 200,
       headers: {
@@ -55,7 +57,8 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
+    console.error('❌ Login Error:', error);
     if (error instanceof z.ZodError) return NextResponse.json({ message: 'Datos inválidos', errors: error.issues }, { status: 400 });
-    return NextResponse.json({ message: 'Error interno' }, { status: 500 });
+    return NextResponse.json({ message: 'Error interno del servidor' }, { status: 500 });
   }
 }
